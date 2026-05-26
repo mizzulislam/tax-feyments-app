@@ -13,6 +13,19 @@ test('createTaxReportSchema rejects invalid report payloads', () => {
   assert.equal(result.success, false);
 });
 
+test('createTaxReportSchema accepts complete PTKP status options', () => {
+  const result = createTaxReportSchema.safeParse({
+    taxYear: 2026,
+    taxPeriod: '12',
+    grossIncome: 120_000_000,
+    status: 'draft',
+    ptkpStatus: 'TK/3',
+    pensionContribution: 0,
+  });
+
+  assert.equal(result.success, true);
+});
+
 test('calculateServerTax recalculates monthly TER server-side', () => {
   const input = createTaxReportSchema.parse({
     taxYear: 2026,

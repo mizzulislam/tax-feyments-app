@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 import TaxCalculatorForm, { calculatorOptions, type CalculatorType } from '@/components/TaxCalculatorForm';
 
-type TaxScopeFilter = 'all' | 'central' | 'regional';
-type TaxFamilyFilter = 'all' | 'pph' | 'ppn' | 'admin';
-type TaxSort = 'default' | 'az' | 'za' | 'centralFirst';
+type TaxScopeFilter = 'all' | 'central' | 'regional' | 'sanction';
+type TaxFamilyFilter = 'all' | 'pph' | 'ppn' | 'stamp';
+type TaxSortField = 'name' | 'category' | 'type';
+type TaxSortDirection = 'ascending' | 'descending';
 
-const taxOptionMeta: Record<CalculatorType, { scope: 'central' | 'regional' | 'admin'; family: 'pph' | 'ppn' | 'regional' | 'admin' }> = {
+const taxOptionMeta: Record<CalculatorType, { scope: Exclude<TaxScopeFilter, 'all'>; family: Exclude<TaxFamilyFilter, 'all'> | 'regional' | 'sanction' }> = {
   pph21: { scope: 'central', family: 'pph' },
   ppn: { scope: 'central', family: 'ppn' },
   ppnbm: { scope: 'central', family: 'ppn' },
@@ -19,29 +20,46 @@ const taxOptionMeta: Record<CalculatorType, { scope: 'central' | 'regional' | 'a
   bphtb: { scope: 'regional', family: 'regional' },
   pbbP2: { scope: 'regional', family: 'regional' },
   pajakDaerah: { scope: 'regional', family: 'regional' },
-  sanksiPajak: { scope: 'admin', family: 'admin' },
-  beaMeterai: { scope: 'central', family: 'admin' },
+  sanksiPajak: { scope: 'sanction', family: 'sanction' },
+  beaMeterai: { scope: 'central', family: 'stamp' },
 };
 
 const scopeFilterOptions: Array<{ value: TaxScopeFilter; label: string }> = [
   { value: 'all', label: 'Semua' },
   { value: 'central', label: 'Pajak pusat' },
   { value: 'regional', label: 'Pajak daerah' },
+  { value: 'sanction', label: 'Sanksi' },
 ];
 
 const familyFilterOptions: Array<{ value: TaxFamilyFilter; label: string }> = [
   { value: 'all', label: 'Semua jenis' },
   { value: 'pph', label: 'PPh' },
   { value: 'ppn', label: 'PPN/PPnBM' },
-  { value: 'admin', label: 'Sanksi & meterai' },
+  { value: 'stamp', label: 'Bea meterai' },
 ];
 
-const sortOptions: Array<{ value: TaxSort; label: string }> = [
-  { value: 'default', label: 'Urutan default' },
-  { value: 'az', label: 'Nama A-Z' },
-  { value: 'za', label: 'Nama Z-A' },
-  { value: 'centralFirst', label: 'Pusat dulu' },
+const sortFieldOptions: Array<{ value: TaxSortField; label: string }> = [
+  { value: 'name', label: 'Nama' },
+  { value: 'category', label: 'Kategori' },
+  { value: 'type', label: 'Jenis' },
 ];
+
+const sortDirectionOptions: Array<{ value: TaxSortDirection; label: string }> = [
+  { value: 'ascending', label: 'Ascending' },
+  { value: 'descending', label: 'Descending' },
+];
+
+const getTaxCategoryLabel = (calculatorType: CalculatorType) => {
+  const scope = taxOptionMeta[calculatorType].scope;
+  return scopeFilterOptions.find((option) => option.value === scope)?.label ?? '';
+};
+
+const getTaxTypeLabel = (calculatorType: CalculatorType) => {
+  const family = taxOptionMeta[calculatorType].family;
+  if (family === 'regional') return 'Pajak daerah';
+  if (family === 'sanction') return 'Sanksi';
+  return familyFilterOptions.find((option) => option.value === family)?.label ?? '';
+};
 
 function FilterIcon() {
   return (
@@ -63,7 +81,8 @@ export default function KalkulatorPage() {
   const [calculatorType, setCalculatorType] = useState<CalculatorType>('pph21');
   const [taxScopeFilter, setTaxScopeFilter] = useState<TaxScopeFilter>('all');
   const [taxFamilyFilter, setTaxFamilyFilter] = useState<TaxFamilyFilter>('all');
-  const [taxSort, setTaxSort] = useState<TaxSort>('default');
+  const [taxSortField, setTaxSortField] = useState<TaxSortField>('name');
+  const [taxSortDirection, setTaxSortDirection] = useState<TaxSortDirection>('ascending');
   const [openMenu, setOpenMenu] = useState<'filter' | 'sort' | null>(null);
 
   const visibleCalculatorOptions = useMemo(() => {
@@ -76,19 +95,28 @@ export default function KalkulatorPage() {
     });
 
     return [...filtered].sort((a, b) => {
-      if (taxSort === 'az') return a.title.localeCompare(b.title);
-      if (taxSort === 'za') return b.title.localeCompare(a.title);
-      if (taxSort === 'centralFirst') {
-        const scopePriority = { central: 0, regional: 1, admin: 2 };
-        return scopePriority[taxOptionMeta[a.id].scope] - scopePriority[taxOptionMeta[b.id].scope];
-      }
-      return calculatorOptions.findIndex((item) => item.id === a.id) - calculatorOptions.findIndex((item) => item.id === b.id);
+      const sortValueA = taxSortField === 'category'
+        ? getTaxCategoryLabel(a.id)
+        : taxSortField === 'type'
+          ? getTaxTypeLabel(a.id)
+          : a.title;
+      const sortValueB = taxSortField === 'category'
+        ? getTaxCategoryLabel(b.id)
+        : taxSortField === 'type'
+          ? getTaxTypeLabel(b.id)
+          : b.title;
+      const direction = taxSortDirection === 'ascending' ? 1 : -1;
+      const primarySort = sortValueA.localeCompare(sortValueB);
+
+      if (primarySort !== 0) return primarySort * direction;
+      return a.title.localeCompare(b.title) * direction;
     });
-  }, [taxScopeFilter, taxFamilyFilter, taxSort]);
+  }, [taxScopeFilter, taxFamilyFilter, taxSortField, taxSortDirection]);
 
   const selectedScopeLabel = scopeFilterOptions.find((item) => item.value === taxScopeFilter)?.label ?? 'Semua';
   const selectedFamilyLabel = familyFilterOptions.find((item) => item.value === taxFamilyFilter)?.label ?? 'Semua jenis';
-  const selectedSortLabel = sortOptions.find((item) => item.value === taxSort)?.label ?? 'Urutan default';
+  const selectedSortFieldLabel = sortFieldOptions.find((item) => item.value === taxSortField)?.label ?? 'Nama';
+  const selectedSortDirectionLabel = sortDirectionOptions.find((item) => item.value === taxSortDirection)?.label ?? 'Ascending';
 
   return (
     <div className="relative w-full space-y-6 animate-in fade-in duration-500">
@@ -117,12 +145,10 @@ export default function KalkulatorPage() {
                 <h2 className="mt-1 text-lg font-black text-white">Jenis Pajak</h2>
               </div>
 
-              <div className="relative flex shrink-0 items-center gap-2" onMouseLeave={() => setOpenMenu(null)}>
+              <div className="relative hidden shrink-0 items-center gap-2 md:flex">
                 <button
                   type="button"
                   aria-label="Filter jenis pajak"
-                  onMouseEnter={() => setOpenMenu('filter')}
-                  onFocus={() => setOpenMenu('filter')}
                   onClick={() => setOpenMenu(openMenu === 'filter' ? null : 'filter')}
                   className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
                     taxScopeFilter !== 'all' || taxFamilyFilter !== 'all' || openMenu === 'filter'
@@ -135,11 +161,9 @@ export default function KalkulatorPage() {
                 <button
                   type="button"
                   aria-label="Sort jenis pajak"
-                  onMouseEnter={() => setOpenMenu('sort')}
-                  onFocus={() => setOpenMenu('sort')}
                   onClick={() => setOpenMenu(openMenu === 'sort' ? null : 'sort')}
                   className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-                    taxSort !== 'default' || openMenu === 'sort'
+                    openMenu === 'sort'
                       ? 'border-blue-500/50 bg-blue-500/10 text-blue-200'
                       : 'border-slate-800 bg-slate-950/45 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                   }`}
@@ -204,29 +228,58 @@ export default function KalkulatorPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-1">
-                        {sortOptions.map((option) => {
-                          const active = taxSort === option.value;
+                      <div className="space-y-3">
+                        <div>
+                          <p className="px-2 pb-1 text-[9px] font-black uppercase tracking-wider text-slate-600">Urutkan berdasarkan</p>
+                          <div className="space-y-1">
+                            {sortFieldOptions.map((option) => {
+                              const active = taxSortField === option.value;
 
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setTaxSort(option.value);
-                                setOpenMenu(null);
-                              }}
-                              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition-colors ${
-                                active
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'
-                              }`}
-                            >
-                              <span>{option.label}</span>
-                              {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                            </button>
-                          );
-                        })}
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => setTaxSortField(option.value)}
+                                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition-colors ${
+                                    active
+                                      ? 'bg-blue-600 text-white'
+                                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'
+                                  }`}
+                                >
+                                  <span>{option.label}</span>
+                                  {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="border-t border-slate-800/80 pt-2">
+                          <p className="px-2 pb-1 text-[9px] font-black uppercase tracking-wider text-slate-600">Arah</p>
+                          <div className="space-y-1">
+                            {sortDirectionOptions.map((option) => {
+                              const active = taxSortDirection === option.value;
+
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setTaxSortDirection(option.value);
+                                    setOpenMenu(null);
+                                  }}
+                                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition-colors ${
+                                    active
+                                      ? 'bg-blue-600 text-white'
+                                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'
+                                  }`}
+                                >
+                                  <span>{option.label}</span>
+                                  {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -234,10 +287,11 @@ export default function KalkulatorPage() {
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-bold text-slate-500">
+            <div className="mt-3 hidden flex-wrap items-center gap-2 text-[10px] font-bold text-slate-500 md:flex">
               <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedScopeLabel}</span>
               <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedFamilyLabel}</span>
-              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedSortLabel}</span>
+              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedSortFieldLabel}</span>
+              <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{selectedSortDirectionLabel}</span>
               <span className="rounded-full border border-slate-800 bg-slate-950/45 px-2.5 py-1">{visibleCalculatorOptions.length} jenis</span>
             </div>
 

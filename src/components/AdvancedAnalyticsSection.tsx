@@ -81,17 +81,17 @@ export default function AdvancedAnalyticsSection({ reportsData }: AdvancedAnalyt
   const yoyComp = compareYearOverYear(currentYearData, prevYearData);
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-5 md:space-y-8">
       <div>
-        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">
+        <h2 className="text-xl md:text-3xl font-black tracking-tight text-white mb-1.5 md:mb-2">
           Analitik <span className="text-blue-500">Lanjutan</span>
         </h2>
-        <p className="text-slate-400 max-w-2xl text-sm md:text-base leading-relaxed">
+        <p className="text-slate-400 max-w-2xl text-xs md:text-base leading-relaxed">
           Pantau rasio pajak efektif, tren bruto bulanan, proporsi alokasi pengeluaran kotor, serta perbandingan year-over-year secara dinamis.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 items-start">
         <div className="lg:col-span-2">
           <IncomeVsTaxChart data={monthlyData} />
         </div>
@@ -100,32 +100,32 @@ export default function AdvancedAnalyticsSection({ reportsData }: AdvancedAnalyt
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <MonthlyTrendBarChart data={monthlyData} />
         <TaxBreakdownPieChart data={categoryData} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
         <div className="lg:col-span-2">
           <YearComparisonChart data={yearlyData} />
         </div>
 
-        <div className="lg:col-span-1 relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl flex flex-col justify-between">
+        <div className="lg:col-span-1 relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl flex flex-col justify-between">
           <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-indigo-500/5 to-transparent opacity-40"></div>
 
-          <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-6 rounded-[23px] flex flex-col justify-between space-y-6">
+          <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-4 md:p-6 rounded-[18px] md:rounded-[23px] flex flex-col justify-between space-y-4 md:space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-                <h3 className="text-md font-bold text-white tracking-tight">Rangkuman Kinerja YoY</h3>
+                <h3 className="text-sm md:text-md font-bold text-white tracking-tight">Rangkuman Kinerja YoY</h3>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[10px] md:text-[11px] text-slate-400">
                 Analisis pertumbuhan finansial tahun {currentYearVal} dibandingkan tahun {currentYearVal - 1}
               </p>
             </div>
 
-            <div className="space-y-4 flex-1 flex flex-col justify-center">
-              <div className="p-4 rounded-2xl bg-slate-950/40 border border-slate-800 space-y-1">
+            <div className="space-y-3 md:space-y-4 flex-1 flex flex-col justify-center">
+              <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-950/40 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Perubahan Pendapatan</span>
                 <div className="flex justify-between items-center">
                   <span className="text-md font-extrabold text-white">
@@ -137,7 +137,7 @@ export default function AdvancedAnalyticsSection({ reportsData }: AdvancedAnalyt
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-950/40 border border-slate-800 space-y-1">
+              <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-950/40 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Perubahan Beban PPh</span>
                 <div className="flex justify-between items-center">
                   <span className="text-md font-extrabold text-white">

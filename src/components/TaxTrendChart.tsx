@@ -65,25 +65,25 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
   };
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl">
+    <div className="relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl">
       <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 via-indigo-500/5 to-transparent opacity-50"></div>
       
-      <div className="relative bg-slate-900/85 backdrop-blur-2xl p-6 md:p-8 rounded-[23px] space-y-6">
+      <div className="relative bg-slate-900/85 backdrop-blur-2xl p-4 md:p-8 rounded-[18px] md:rounded-[23px] space-y-4 md:space-y-6">
         
         {/* Header Grafik */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-              <h3 className="text-lg font-bold text-white tracking-tight">Tren Analisis Perpajakan</h3>
+              <h3 className="text-base md:text-lg font-bold text-white tracking-tight">Tren Analisis Perpajakan</h3>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-[11px] md:text-xs text-slate-400 mt-1">
               {isAllZero ? 'Visualisasi Data Simulasi Wajib Pajak OP' : 'Perbandingan Komparatif Riwayat Pajak Anda'}
             </p>
           </div>
 
           {/* Legenda Grafik */}
-          <div className="flex items-center gap-4 text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-[11px] md:text-xs font-semibold">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
               <span className="text-slate-300">Pendapatan Bruto</span>
@@ -96,7 +96,7 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
         </div>
 
         {/* CONTAINER RECHARTS */}
-        <div className="w-full h-[280px] min-h-[240px] pt-4">
+        <div className="w-full h-[190px] min-h-[180px] md:h-[280px] md:min-h-[240px] pt-2 md:pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={displayData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
               <defs>

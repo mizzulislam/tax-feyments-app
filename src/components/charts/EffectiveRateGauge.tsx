@@ -28,23 +28,23 @@ export default function EffectiveRateGauge({ rate }: EffectiveRateGaugeProps) {
   const activeColor = getGaugeColor(clampedRate);
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl h-[360px] flex flex-col">
+    <div className="relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl h-[250px] md:h-[360px] flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-indigo-500/5 to-transparent opacity-40"></div>
       
-      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-6 rounded-[23px] flex flex-col justify-between">
+      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-4 md:p-6 rounded-[18px] md:rounded-[23px] flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></span>
-            <h3 className="text-md font-bold text-white tracking-tight">Tarif Efektif Rata-Rata</h3>
+            <h3 className="text-sm md:text-md font-bold text-white tracking-tight">Tarif Efektif Rata-Rata</h3>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[10px] md:text-[11px] text-slate-400">
             Rasio rata-rata PPh Terutang dibandingkan dengan seluruh Penghasilan Bruto Anda
           </p>
         </div>
 
         {/* Speedometer Gauge Container */}
-        <div className="flex-1 relative flex flex-col items-center justify-center min-h-[200px]">
-          <div className="w-52 h-28 relative overflow-hidden flex items-center justify-center">
+        <div className="flex-1 relative flex flex-col items-center justify-center min-h-[120px] md:min-h-[200px]">
+          <div className="w-40 h-20 md:w-52 md:h-28 relative overflow-hidden flex items-center justify-center">
             <ResponsiveContainer width="100%" height="200%" style={{ position: 'absolute', top: 0 }}>
               <PieChart>
                 <Pie
@@ -53,8 +53,8 @@ export default function EffectiveRateGauge({ rate }: EffectiveRateGaugeProps) {
                   cy="50%"
                   startAngle={180}
                   endAngle={0}
-                  innerRadius={65}
-                  outerRadius={80}
+                  innerRadius="62%"
+                  outerRadius="77%"
                   paddingAngle={0}
                   dataKey="value"
                 >
@@ -66,14 +66,14 @@ export default function EffectiveRateGauge({ rate }: EffectiveRateGaugeProps) {
             
             {/* Centered Speedometer Text */}
             <div className="absolute bottom-0 flex flex-col items-center justify-end select-none">
-              <span className="text-3xl font-black text-white font-mono leading-none tracking-tight">{rate.toFixed(2)}%</span>
+              <span className="text-2xl md:text-3xl font-black text-white font-mono leading-none tracking-tight">{rate.toFixed(2)}%</span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">Tarif Efektif (ETR)</span>
             </div>
           </div>
         </div>
 
         {/* Edu-Explainer Card */}
-        <div className="p-3.5 rounded-2xl bg-slate-950/40 border border-slate-800 text-[11px] font-semibold text-slate-400 leading-relaxed text-center">
+        <div className="p-3 md:p-3.5 rounded-xl md:rounded-2xl bg-slate-950/40 border border-slate-800 text-[10px] md:text-[11px] font-semibold text-slate-400 leading-snug md:leading-relaxed text-center">
           {rate <= 0 ? (
             <span>Belum ada data penghasilan untuk menghitung rasio tarif efektif pajak Anda.</span>
           ) : rate <= 5 ? (

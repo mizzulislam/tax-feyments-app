@@ -34,22 +34,22 @@ export default function MonthlyTrendBarChart({ data }: MonthlyTrendBarChartProps
   };
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl h-[360px] flex flex-col">
+    <div className="relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl h-[250px] md:h-[360px] flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/15 via-blue-500/5 to-transparent opacity-40"></div>
       
-      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-6 rounded-[23px] flex flex-col justify-between">
+      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-4 md:p-6 rounded-[18px] md:rounded-[23px] flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-550 bg-emerald-450 bg-emerald-500 animate-pulse"></span>
-            <h3 className="text-md font-bold text-white tracking-tight">Tren Penghasilan Bruto</h3>
+            <h3 className="text-sm md:text-md font-bold text-white tracking-tight">Tren Penghasilan Bruto</h3>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[10px] md:text-[11px] text-slate-400">
             {isEmpty ? 'Visualisasi Data Tren Bulanan Simulasi' : 'Statistik Fluktuasi Penghasilan Kotor Bulanan Wajib Pajak'}
           </p>
         </div>
 
         {/* Chart Container */}
-        <div className="flex-1 w-full h-full min-h-[220px]">
+        <div className="flex-1 w-full h-full min-h-[150px] md:min-h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={displayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>

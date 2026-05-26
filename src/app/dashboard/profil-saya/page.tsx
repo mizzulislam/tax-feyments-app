@@ -12,6 +12,7 @@ type ActivityProfile = {
   avatarUrl: string | null;
   occupation: string | null;
   education: string | null;
+  domicile: string | null;
   hobbies: string | null;
   createdAt: string | null;
   email: string | null;
@@ -31,10 +32,10 @@ const statusLabel: Record<TaxLearningModule['status'], string> = {
 
 function StatTile({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 shadow-xl">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-black text-white">{value}</p>
-      <p className="mt-1 text-xs font-semibold text-slate-400">{hint}</p>
+    <div className="rounded-xl border border-slate-800/80 bg-slate-950/50 p-3 shadow-xl md:rounded-2xl md:p-5">
+      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-[10px] md:tracking-[0.22em]">{label}</p>
+      <p className="mt-1.5 text-2xl font-black leading-none text-white md:mt-3 md:text-3xl">{value}</p>
+      <p className="mt-1 text-[10px] font-semibold leading-snug text-slate-400 md:text-xs">{hint}</p>
     </div>
   );
 }
@@ -85,6 +86,7 @@ async function fetchProfile(): Promise<ActivityProfile> {
       avatarUrl: null,
       occupation: null,
       education: null,
+      domicile: null,
       hobbies: null,
       createdAt: null,
       email: null,
@@ -93,7 +95,7 @@ async function fetchProfile(): Promise<ActivityProfile> {
 
   const { data } = await supabase
     .from('profiles')
-    .select('full_name, taxpayer_type, avatar_url, occupation, education, hobbies, created_at')
+    .select('full_name, taxpayer_type, avatar_url, occupation, education, domicile, hobbies, created_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -103,6 +105,7 @@ async function fetchProfile(): Promise<ActivityProfile> {
     avatarUrl: data?.avatar_url ?? null,
     occupation: data?.occupation ?? null,
     education: data?.education ?? null,
+    domicile: data?.domicile ?? null,
     hobbies: data?.hobbies ?? null,
     createdAt: data?.created_at ?? null,
     email: user.email ?? null,
@@ -157,16 +160,16 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-5 animate-in fade-in duration-500 md:space-y-6">
       <section className="overflow-hidden rounded-3xl border border-slate-800/80 bg-[#111318] shadow-2xl">
         <div className="relative min-h-[300px] px-6 py-8 md:px-10 lg:px-12">
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[radial-gradient(ellipse_at_bottom_right,rgba(37,99,235,0.18),transparent_58%)]" />
           <div className="pointer-events-none absolute -bottom-16 right-0 h-56 w-[520px] rounded-full border border-slate-800/50 opacity-40" />
           <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-center">
-            <div className="flex justify-center lg:w-44 lg:justify-end">
+            <div className="flex justify-start lg:w-44 lg:justify-end">
               <div className="relative">
                 <div
-                  className="flex h-28 w-28 items-center justify-center rounded-full border border-blue-500/25 bg-cover bg-center bg-no-repeat text-3xl font-bold text-blue-100 shadow-2xl shadow-blue-950/25 md:h-36 md:w-36 md:text-4xl"
+                  className="flex h-32 w-32 items-center justify-center rounded-full border border-blue-500/25 bg-cover bg-center bg-no-repeat text-3xl font-bold text-blue-100 shadow-2xl shadow-blue-950/25 md:h-40 md:w-40 md:text-4xl"
                   style={profile?.avatarUrl ? { backgroundImage: `url(${profile.avatarUrl})` } : undefined}
                 >
                   {!profile?.avatarUrl && initials}
@@ -174,7 +177,7 @@ export default function MyProfilePage() {
               </div>
             </div>
 
-            <div className="max-w-4xl flex-1 text-center lg:text-left">
+            <div className="max-w-4xl flex-1 text-left">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl xl:text-5xl">
@@ -187,24 +190,24 @@ export default function MyProfilePage() {
               </div>
 
               <div className="mt-5 space-y-2.5 text-sm font-semibold text-white">
-                <div className="flex items-center justify-center gap-2 lg:justify-start">
+                <div className="flex items-center justify-start gap-2">
                   <svg className="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3l1.9 3.86 4.26.62-3.08 3 .73 4.24L12 12.72l-3.81 2 .73-4.24-3.08-3 4.26-.62L12 3z" />
                   </svg>
                   <span>{totalXp} XP</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 lg:justify-start">
+                <div className="flex items-center justify-start gap-2">
                   <svg className="h-4 w-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                   </svg>
                   <span>Bergabung sejak {formatJoinDate(profile?.createdAt ?? null)}</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 lg:justify-start">
+                <div className="flex items-center justify-start gap-2">
                   <svg className="h-4 w-4 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s6-5.686 6-11a6 6 0 1 0-12 0c0 5.314 6 11 6 11Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10.5h.01" />
                   </svg>
-                  <span>{profile?.education || 'Domisili belum diatur'}</span>
+                  <span>{profile?.domicile || 'Domisili belum diatur'}</span>
                 </div>
               </div>
 
@@ -220,7 +223,7 @@ export default function MyProfilePage() {
       </section>
 
       <section>
-        <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-4 md:p-8">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
           <StatTile label="Points" value={String(totalPoints)} hint="Dari modul selesai" />
           <StatTile label="XP" value={String(totalXp)} hint="Dari quiz pajak" />
           <StatTile label="Modul" value={`${completedModules.length}/${modules.length}`} hint={`${progressPercent}% progres belajar`} />
@@ -236,9 +239,6 @@ export default function MyProfilePage() {
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-400">Academy</p>
                 <h2 className="mt-2 text-2xl font-black text-white">Modul yang Dipelajari</h2>
               </div>
-              <Link href="/dashboard/glossary" className="text-xs font-black text-blue-300 hover:text-blue-200">
-                Lihat Semua
-              </Link>
             </div>
 
             <div className="space-y-4">
@@ -272,17 +272,16 @@ export default function MyProfilePage() {
                 ))
               )}
             </div>
+
+            <div className="mt-5 flex justify-end border-t border-slate-800/70 pt-4">
+              <Link href="/dashboard/glossary" className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300 transition-colors hover:border-blue-400/40 hover:bg-blue-500/15 hover:text-blue-200">
+                Lihat Semua
+              </Link>
+            </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-800/80 bg-slate-900/40 p-6 shadow-2xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-400">Tentang Saya</p>
-            <p className="mt-4 text-sm leading-relaxed text-slate-300">
-              {profile?.hobbies || 'Ringkasan aktivitas akan makin kaya ketika user mulai menyelesaikan modul, quiz, dan memperbarui headline di pengaturan.'}
-            </p>
-          </div>
-
           <div className="rounded-3xl border border-slate-800/80 bg-slate-900/40 p-6 shadow-2xl">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-400">Quiz Pajak</p>
             <h2 className="mt-2 text-2xl font-black text-white">Riwayat Quiz</h2>

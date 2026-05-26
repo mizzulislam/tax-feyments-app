@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -37,9 +37,54 @@ export default function DashboardShell({ children, userEmail, userName, userHand
   const queryClient = useQueryClient();
   const clearStore = useTaxpayerStore((state) => state.clearStore);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Untuk Drawer Mobile
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Untuk Minimize Desktop
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Untuk Minimize Desktop
+  const [sidebarContentHidden, setSidebarContentHidden] = useState(false);
+  const [sidebarClosing, setSidebarClosing] = useState(false);
   const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({});
-  const collapsedItemClass = 'mx-auto flex h-12 w-12 items-center justify-center rounded-2xl p-0';
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [canHoverPointer, setCanHoverPointer] = useState(true);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const sidebarCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const collapsedItemClass = 'mx-auto flex h-11 w-11 items-center justify-center rounded-2xl p-0 [&_svg]:h-[18px] [&_svg]:w-[18px]';
+  const sidebarMotionClass = 'duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-0 motion-reduce:transition-none';
+  const sidebarCloseMotionClass = 'duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-0 motion-reduce:transition-none';
+  const sidebarItemMotionClass = `${sidebarClosing ? 'duration-[160ms]' : 'duration-300'} ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-0 motion-reduce:transition-none`;
+  const sidebarPanelMotionClass = sidebarClosing ? sidebarCloseMotionClass : sidebarMotionClass;
+
+  useEffect(() => {
+    const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const updatePointerMode = () => setCanHoverPointer(hoverQuery.matches);
+
+    updatePointerMode();
+    hoverQuery.addEventListener('change', updatePointerMode);
+
+    return () => hoverQuery.removeEventListener('change', updatePointerMode);
+  }, []);
+
+  useEffect(() => {
+    if (!profileDropdownOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!profileDropdownRef.current?.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [profileDropdownOpen]);
+
+  useEffect(() => {
+    setProfileDropdownOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    return () => {
+      if (sidebarCollapseTimeoutRef.current) {
+        clearTimeout(sidebarCollapseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -131,7 +176,26 @@ export default function DashboardShell({ children, userEmail, userName, userHand
       setSidebarOpen((current) => !current);
       return;
     }
-    setSidebarCollapsed((current) => !current);
+
+    if (sidebarCollapseTimeoutRef.current) {
+      clearTimeout(sidebarCollapseTimeoutRef.current);
+      sidebarCollapseTimeoutRef.current = null;
+    }
+    setSidebarClosing(false);
+
+    if (sidebarCollapsed || sidebarContentHidden) {
+      setSidebarCollapsed(false);
+      window.requestAnimationFrame(() => setSidebarContentHidden(false));
+      return;
+    }
+
+    setSidebarClosing(true);
+    setSidebarContentHidden(true);
+    setSidebarCollapsed(true);
+    sidebarCollapseTimeoutRef.current = setTimeout(() => {
+      setSidebarClosing(false);
+      sidebarCollapseTimeoutRef.current = null;
+    }, 580);
   };
 
   return (
@@ -144,46 +208,42 @@ export default function DashboardShell({ children, userEmail, userName, userHand
       </div>
 
       {/* MOBILE SIDEBAR OVERLAY */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
-        />
-      )}
+      <div
+        onClick={() => setSidebarOpen(false)}
+        className={`fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 transition-[opacity,backdrop-filter] ${sidebarPanelMotionClass} lg:hidden ${sidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+      />
 
       {/* SIDEBAR PANEL */}
       <aside
-        className={`fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform] transition-[width,transform,padding] duration-300 ease-out lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
+        className={`fixed inset-y-0 left-0 bg-[#0b0d12]/95 backdrop-blur-xl border-r border-white/[0.06] pt-4 pb-6 flex flex-col z-50 overflow-visible transform-gpu will-change-[width,transform,padding,box-shadow] transition-[width,transform,padding,box-shadow] ${sidebarPanelMotionClass} lg:translate-x-0 lg:h-screen ${sidebarOpen ? 'translate-x-0 max-lg:shadow-2xl max-lg:shadow-slate-950/60' : '-translate-x-full'} ${sidebarCollapsed ? 'w-[68px] px-0' : 'w-80 px-5 max-lg:shadow-2xl max-lg:shadow-slate-950/60'}`}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           {/* Logo & Brand */}
-          <div className={`group/header relative flex ${sidebarCollapsed ? 'items-center justify-center py-4 mb-2 h-16' : 'items-center justify-between py-3 mb-5'}`}>
-            <div className={`flex min-w-0 items-center gap-3 transition-all duration-300 ${sidebarCollapsed ? 'group-hover/header:opacity-0 group-hover/header:scale-90' : ''}`}>
-              <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-300 shadow-[0_0_24px_rgba(59,130,246,0.26)]">
+          <div className={`group/header relative flex transition-[height,margin,padding] ${sidebarPanelMotionClass} ${sidebarCollapsed ? 'items-center justify-center py-4 mb-2 h-16' : 'items-center justify-between py-3 mb-5 h-14'}`}>
+            <div className={`flex min-w-0 items-center transition-[gap,opacity,transform] ${sidebarPanelMotionClass} ${sidebarCollapsed ? 'gap-0 group-hover/header:opacity-0 group-hover/header:scale-90' : 'gap-3'}`}>
+              <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-300 shadow-[0_0_24px_rgba(59,130,246,0.26)] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/header:scale-105 motion-reduce:transition-none">
                 <div className="absolute inset-[1.5px] rounded-[10.5px] bg-slate-950/30" />
                 <svg className="relative h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
 
-              {!sidebarCollapsed && (
-                <div className="flex max-w-[210px] flex-col overflow-hidden">
-                  <span className="text-xl font-bold text-white tracking-wide block whitespace-nowrap">Tax Feyments</span>
-                </div>
-              )}
+              <div className={`flex flex-col overflow-hidden transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 -translate-x-2 opacity-0' : 'max-w-[210px] translate-x-0 opacity-100 delay-100'}`}>
+                <span className="block whitespace-nowrap text-xl font-bold tracking-wide text-white">Tax Feyments</span>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={toggleSidebar}
-              className={`group/toggle flex h-10 w-10 items-center justify-center text-slate-400 transition-all duration-300 hover:bg-white/[0.08] hover:text-white z-10 ${sidebarCollapsed ? 'absolute rounded-2xl opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:scale-100' : 'relative rounded-full opacity-100 scale-100'}`}
+              className={`group/toggle flex h-10 w-10 items-center justify-center text-slate-400 transition-[opacity,transform,background-color,color] ${sidebarPanelMotionClass} hover:bg-white/[0.08] hover:text-white z-10 ${sidebarCollapsed ? `absolute rounded-2xl ${canHoverPointer ? 'opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:scale-100' : 'opacity-100 scale-100 bg-white/[0.055]'}` : 'relative rounded-full opacity-100 scale-100'}`}
               aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
             >
-              <svg className="absolute h-5 w-5 opacity-100 transition duration-200 group-hover/toggle:opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute h-5 w-5 opacity-100 transition duration-200 group-hover/toggle:opacity-0 motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" strokeWidth="2" />
                 <path d="M9 3v18" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              <svg className="absolute h-5 w-5 opacity-0 transition duration-200 group-hover/toggle:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute h-5 w-5 opacity-0 transition duration-200 group-hover/toggle:opacity-100 motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" strokeWidth="2" />
                 <path d="M9 3v18" strokeWidth="2" strokeLinecap="round" />
                 <path d={sidebarCollapsed ? "m13 15 3-3-3-3" : "m15 15-3-3 3-3"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -195,36 +255,43 @@ export default function DashboardShell({ children, userEmail, userName, userHand
           </div>
 
           {/* Navigation Links */}
-          <nav className={`min-h-0 flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${sidebarCollapsed ? 'space-y-3 overflow-visible' : 'space-y-2 overflow-y-auto overflow-x-hidden pr-1'}`}>
-            {navItems.map((item) => {
+          <nav className={`min-h-0 flex-1 transition-[padding] ${sidebarPanelMotionClass} [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${sidebarCollapsed ? 'space-y-2 overflow-visible' : 'space-y-2 overflow-y-auto overflow-x-hidden pr-1'}`}>
+            {navItems.map((item, index) => {
               const isActive = isGroupActive(item);
               const isOpen = Boolean(openNavGroups[item.name]);
+              const itemDelay = sidebarContentHidden ? '0ms' : `${140 + index * 55}ms`;
 
               if (item.children) {
                 return (
-                  <div key={item.name} className={sidebarCollapsed ? 'block relative' : 'space-y-1'}>
+                  <div key={item.name} className={`${sidebarCollapsed ? 'block relative' : 'space-y-1'} transition-[opacity,transform] ${sidebarItemMotionClass}`} style={{ transitionDelay: itemDelay }}>
                     <button
                       type="button"
                       onClick={() => {
-                        if (sidebarCollapsed) {
+                        if (sidebarCollapsed || sidebarContentHidden) {
+                          if (sidebarCollapseTimeoutRef.current) {
+                            clearTimeout(sidebarCollapseTimeoutRef.current);
+                            sidebarCollapseTimeoutRef.current = null;
+                          }
+                          setSidebarClosing(false);
                           setSidebarCollapsed(false);
+                          setSidebarContentHidden(false);
                           setOpenNavGroups((current) => ({ ...current, [item.name]: true }));
                         } else {
                           setOpenNavGroups((current) => ({ ...current, [item.name]: !current[item.name] }));
                         }
                       }}
-                      className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 group ${sidebarCollapsed ? collapsedItemClass : 'w-full rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
+                      className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${sidebarCollapsed ? collapsedItemClass : 'w-full rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
                       aria-expanded={isOpen}
                     >
                       <span className={`${isActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'} flex-shrink-0 transition-colors duration-200`}>
                         {item.icon}
                       </span>
 
-                      <span className={`overflow-hidden origin-left truncate text-left transition-[max-width,opacity,transform] duration-300 ease-out ${sidebarCollapsed ? 'max-w-0 opacity-0 scale-95 pointer-events-none' : 'max-w-[150px] opacity-100 scale-100'}`}>
+                      <span className={`overflow-hidden origin-left truncate text-left transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
                         {item.name}
                       </span>
 
-                      <span className={`${sidebarCollapsed ? 'absolute opacity-0 scale-75 pointer-events-none' : 'ml-auto opacity-100'} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md text-lg font-light leading-none transition-[opacity,transform,color] duration-300 ${isOpen ? 'text-blue-200' : 'text-slate-500 group-hover:text-slate-300'}`}>
+                      <span className={`${sidebarContentHidden ? 'absolute opacity-0 scale-75 pointer-events-none' : 'ml-auto opacity-100'} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md text-lg font-light leading-none transition-[opacity,transform,color] ${sidebarItemMotionClass} ${isOpen ? 'text-blue-200 rotate-180' : 'text-slate-500 group-hover:text-slate-300 rotate-0'}`} style={{ transitionDelay: itemDelay }}>
                         {isOpen ? '-' : '+'}
                       </span>
                       {sidebarCollapsed && (
@@ -265,13 +332,14 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                   key={item.name}
                   href={item.href || '#'}
                   onClick={() => setSidebarOpen(false)}
-                  className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 group ${sidebarCollapsed ? collapsedItemClass : 'rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
+                  className={`relative flex items-center text-sm font-semibold transition-[background-color,color,box-shadow,width,padding,gap] ${sidebarPanelMotionClass} group ${sidebarCollapsed ? collapsedItemClass : 'rounded-full px-4 py-3 gap-3.5'} ${isActive ? 'bg-white/[0.08] text-white shadow-lg shadow-blue-500/10' : 'text-slate-300 hover:text-white hover:bg-white/[0.055]'}`}
+                  style={{ transitionDelay: itemDelay }}
                 >
                   <span className={`${isActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'} flex-shrink-0 transition-colors duration-200`}>
                     {item.icon}
                   </span>
 
-                  <span className={`overflow-hidden origin-left truncate transition-[max-width,opacity,transform] duration-300 ease-out ${sidebarCollapsed ? 'max-w-0 opacity-0 scale-95 pointer-events-none' : 'max-w-[150px] opacity-100 scale-100'}`}>
+                  <span className={`overflow-hidden origin-left truncate transition-[max-width,opacity,transform] ${sidebarItemMotionClass} ${sidebarContentHidden ? 'max-w-0 translate-x-1 opacity-0 pointer-events-none' : 'max-w-[150px] translate-x-0 opacity-100'}`} style={{ transitionDelay: itemDelay }}>
                     {item.name}
                   </span>
                   {sidebarCollapsed && (
@@ -289,7 +357,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
       {/* MAIN VIEW AREA */}
       <div
-        className={`flex min-w-0 flex-col overflow-y-auto h-screen relative z-10 transform-gpu transition-transform duration-300 ease-out lg:pl-[68px] ${sidebarCollapsed ? 'lg:translate-x-0' : 'lg:translate-x-[252px]'}`}
+        className={`flex min-w-0 flex-col overflow-y-auto h-screen relative z-10 transform-gpu will-change-transform transition-transform ${sidebarPanelMotionClass} lg:pl-[68px] ${sidebarCollapsed ? 'lg:translate-x-0' : 'lg:translate-x-[252px]'}`}
       >
 
         {/* HEADER BAR */}
@@ -315,10 +383,18 @@ export default function DashboardShell({ children, userEmail, userName, userHand
             <NotificationCenter />
 
             {/* GLOWING PROFILE DROPDOWN */}
-            <div className="relative group/profile">
+            <div ref={profileDropdownRef} className="relative group/profile">
               <button
+                type="button"
+                onClick={() => {
+                  if (!canHoverPointer) {
+                    setProfileDropdownOpen((current) => !current);
+                  }
+                }}
                 className="flex items-center gap-2 p-1 px-2.5 bg-slate-900 rounded-lg hover:bg-slate-800 transition-all duration-200 outline-none cursor-pointer select-none"
                 aria-label="Menu Wajib Pajak"
+                aria-expanded={profileDropdownOpen}
+                aria-haspopup="menu"
               >
                 {/* Avatar / Initials Circle */}
                 <div
@@ -339,10 +415,10 @@ export default function DashboardShell({ children, userEmail, userName, userHand
                 </div>
 
                 {/* Dynamic Chevron */}
-                <svg className="w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 group-hover/profile:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                <svg className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''} ${canHoverPointer ? 'group-hover/profile:rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
               </button>
 
-              <div className="absolute right-0 top-full pt-3 w-56 opacity-0 invisible group-hover/profile:opacity-100 group-hover/profile:visible transition-all duration-300 z-50 origin-top-right transform group-hover/profile:translate-y-0 translate-y-2 pointer-events-none group-hover/profile:pointer-events-auto">
+              <div className={`absolute right-0 top-full pt-3 w-56 transition-all duration-300 z-50 origin-top-right transform ${profileDropdownOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'} ${canHoverPointer ? 'group-hover/profile:opacity-100 group-hover/profile:visible group-hover/profile:translate-y-0 group-hover/profile:pointer-events-auto' : ''}`}>
                 <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-800/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 space-y-3">
                   <div className="border-b border-slate-900 pb-3">
                       <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Wajib Pajak Aktif</span>
@@ -379,6 +455,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
                       <Link
                         href="/dashboard/profil-saya"
+                        onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-semibold text-slate-350 hover:text-white hover:bg-slate-900 rounded-lg transition-all"
                       >
                         <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -387,6 +464,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
                       <Link
                         href="/dashboard/profile"
+                        onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-semibold text-slate-350 hover:text-white hover:bg-slate-900 rounded-lg transition-all"
                       >
                         <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -398,6 +476,7 @@ export default function DashboardShell({ children, userEmail, userName, userHand
 
                       <button
                         onClick={() => {
+                          setProfileDropdownOpen(false);
                           handleLogout();
                         }}
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all text-left cursor-pointer border border-transparent hover:border-red-500/10"

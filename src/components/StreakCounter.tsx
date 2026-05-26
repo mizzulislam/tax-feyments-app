@@ -1,6 +1,12 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
 export default function StreakCounter() {
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [canHoverPointer, setCanHoverPointer] = useState(true);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   // Mock data for streak
   const currentStreak = 1;
   const longestStreak = 2;
@@ -12,11 +18,42 @@ export default function StreakCounter() {
     { name: 'Min', active: true },
   ];
 
+  useEffect(() => {
+    const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const updatePointerMode = () => setCanHoverPointer(hoverQuery.matches);
+
+    updatePointerMode();
+    hoverQuery.addEventListener('change', updatePointerMode);
+
+    return () => hoverQuery.removeEventListener('change', updatePointerMode);
+  }, []);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [popoverOpen]);
+
   return (
-    <div className="relative group/streak">
+    <div ref={popoverRef} className="relative group/streak">
       <button
+        type="button"
+        onClick={() => {
+          if (!canHoverPointer) {
+            setPopoverOpen((current) => !current);
+          }
+        }}
         className="flex items-center gap-2 h-9 px-2.5 bg-slate-900 rounded-lg hover:bg-slate-800 transition-all duration-200 outline-none cursor-pointer"
         aria-label="Streak Counter"
+        aria-expanded={popoverOpen}
+        aria-haspopup="menu"
       >
         <div className="flex items-center justify-center w-5 h-5 rounded-full bg-orange-500/20 text-orange-500">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,7 +64,7 @@ export default function StreakCounter() {
         <span className="text-xs font-bold text-white">{currentStreak}</span>
       </button>
 
-      <div className="absolute right-0 top-full pt-3 w-60 opacity-0 invisible group-hover/streak:opacity-100 group-hover/streak:visible transition-all duration-300 z-50 origin-top-right transform group-hover/streak:translate-y-0 translate-y-2 pointer-events-none group-hover/streak:pointer-events-auto">
+      <div className={`absolute right-0 top-full pt-3 w-60 transition-all duration-300 z-50 origin-top-right transform ${popoverOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'} ${canHoverPointer ? 'group-hover/streak:opacity-100 group-hover/streak:visible group-hover/streak:translate-y-0 group-hover/streak:pointer-events-auto' : ''}`}>
         <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-800/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-3">
           <div className="flex justify-between items-center mb-4">
             {days.map((day, index) => (

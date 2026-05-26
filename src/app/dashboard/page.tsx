@@ -47,7 +47,7 @@ function DashboardContent() {
   const reportsData = reports || [];
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-12 animate-in fade-in duration-500">
       
       {/* BANNER NOTIFIKASI ERROR (ROLE GUARD LIMITATION) */}
       {errorBanner && (
@@ -59,10 +59,10 @@ function DashboardContent() {
 
       {/* Welcome Title Banner */}
       <div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">
+        <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2 md:mb-3">
           Dasbor Utama
         </h1>
-        <p className="text-slate-400 max-w-2xl text-md leading-relaxed">
+        <p className="text-slate-400 max-w-2xl text-sm md:text-md leading-relaxed">
           Kelola, simulasikan, dan pantau riwayat pelaporan pajak Anda secara terintegrasi menggunakan kalkulator pintar UU HPP.
         </p>
       </div>
@@ -76,7 +76,7 @@ function DashboardContent() {
       <AdvancedAnalyticsSection reportsData={reportsData} />
 
       {/* Sections: Tax History and Tax Calendar */}
-      <div className="space-y-8">
+      <div className="space-y-5 md:space-y-8">
         <TaxHistoryTable data={reportsData} />
         <TaxCalendar />
       </div>

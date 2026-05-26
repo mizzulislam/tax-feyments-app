@@ -148,7 +148,7 @@ export default function TaxCalendar() {
     
     // Kosongkan hari sebelum awal bulan
     for (let i = 0; i < adjustedFirstDayIndex; i++) {
-      dayCells.push(<div key={`empty-${i}`} className="h-12 w-full"></div>);
+      dayCells.push(<div key={`empty-${i}`} className="h-9 md:h-12 w-full"></div>);
     }
 
     // Isi hari aktif
@@ -181,11 +181,11 @@ export default function TaxCalendar() {
       dayCells.push(
         <div 
           key={`day-${d}`} 
-          className={`h-12 w-full rounded-xl flex items-center justify-center text-sm transition-all duration-300 relative group cursor-pointer ${highlightClass}`}
+          className={`h-9 md:h-12 w-full rounded-lg md:rounded-xl flex items-center justify-center text-xs md:text-sm transition-all duration-300 relative group cursor-pointer ${highlightClass}`}
         >
           {d}
           {isHoliday && (
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-rose-400" />
+            <span className="absolute right-1.5 top-1.5 md:right-2 md:top-2 h-1.5 w-1.5 rounded-full bg-rose-400" />
           )}
           
           {/* Tooltip Hover */}
@@ -221,34 +221,34 @@ export default function TaxCalendar() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8 items-start">
       
       {/* Kolom Kalender */}
-      <div className="lg:col-span-2 space-y-5">
-        <h3 className="text-xl font-bold text-white tracking-tight px-1">Kalender Pajak</h3>
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
-          <div className="flex items-center justify-between mb-8">
+      <div className="lg:col-span-2 space-y-3 md:space-y-5">
+        <h3 className="text-lg md:text-xl font-bold text-white tracking-tight px-1">Kalender Pajak</h3>
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-2xl">
+          <div className="flex items-center justify-between gap-3 mb-5 md:mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">{monthNames[month]} {year}</h2>
-              <p className="text-sm text-slate-500 mt-1">Gunakan navigasi untuk memantau bulan perpajakan lainnya.</p>
+              <h2 className="text-lg md:text-2xl font-bold text-white tracking-tight">{monthNames[month]} {year}</h2>
+              <p className="text-xs md:text-sm text-slate-500 mt-1">Pantau bulan perpajakan lainnya.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <button 
                 onClick={handlePrevMonth}
-                className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors focus:ring-2 focus:ring-slate-700 outline-none"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors focus:ring-2 focus:ring-slate-700 outline-none"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
               </button>
               <button 
                 onClick={handleNextMonth}
-                className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors focus:ring-2 focus:ring-slate-700 outline-none"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors focus:ring-2 focus:ring-slate-700 outline-none"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
+          <div className="grid grid-cols-7 gap-1.5 md:gap-2 text-center text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider md:tracking-widest mb-3 md:mb-4">
             <div>Sen</div>
             <div>Sel</div>
             <div>Rab</div>
@@ -259,12 +259,12 @@ export default function TaxCalendar() {
           </div>
 
           {/* Kalender Hari Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1.5 md:gap-2">
             {renderDays()}
           </div>
 
           {/* Legenda Warna */}
-          <div className="mt-8 pt-6 border-t border-slate-800/50 flex flex-wrap gap-4 text-xs">
+          <div className="mt-5 md:mt-8 pt-4 md:pt-6 border-t border-slate-800/50 flex flex-wrap gap-3 md:gap-4 text-[10px] md:text-xs">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-orange-500/20 border border-orange-500/40"></span>
               <span className="text-slate-400">Penyetoran PPh Masa (Tgl 15)</span>
@@ -287,27 +287,27 @@ export default function TaxCalendar() {
       </div>
 
       {/* Kolom Pengingat */}
-      <div className="lg:col-span-1 space-y-6">
-        <h3 className="text-xl font-bold text-white tracking-tight px-1">Pengingat Penting Bulan Ini</h3>
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs leading-5 text-amber-100/80">
+      <div className="lg:col-span-1 space-y-4 md:space-y-6">
+        <h3 className="text-lg md:text-xl font-bold text-white tracking-tight px-1">Pengingat Penting Bulan Ini</h3>
+        <div className="rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 md:p-4 text-[11px] md:text-xs leading-5 text-amber-100/80">
           Periksa tanggal weekend, libur nasional, dan cuti bersama sebelum datang ke KPP. Kanal elektronik mungkin tetap tersedia, tetapi layanan tatap muka umumnya mengikuti hari kerja.
         </div>
         
         {deadlines.map((dl, idx) => (
           <div 
             key={idx} 
-            className={`group relative overflow-hidden rounded-3xl bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-6 transition-all hover:bg-slate-800/50 hover:border-slate-700 hover:shadow-2xl`}
+            className={`group relative overflow-hidden rounded-2xl md:rounded-3xl bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-4 md:p-6 transition-all hover:bg-slate-800/50 hover:border-slate-700 hover:shadow-2xl`}
           >
             <div className={`absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
             <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
                 <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${dl.color} ${dl.bgGlow}`}>
                   Tanggal {dl.day}
                 </span>
                 <span className="text-xs text-slate-500 font-medium">Batas Akhir</span>
               </div>
-              <h4 className="font-bold text-white text-md tracking-tight group-hover:text-blue-400 transition-colors">{dl.title}</h4>
-              <p className="text-sm text-slate-400 mt-2 leading-relaxed">{dl.desc}</p>
+              <h4 className="font-bold text-white text-sm md:text-md tracking-tight group-hover:text-blue-400 transition-colors">{dl.title}</h4>
+              <p className="text-xs md:text-sm text-slate-400 mt-1.5 md:mt-2 leading-relaxed">{dl.desc}</p>
             </div>
           </div>
         ))}

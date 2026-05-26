@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { 
   useFetchNotifications, 
   useMarkAsRead,
@@ -9,8 +9,34 @@ import {
 export default function NotificationCenter() {
   const { data: notifications = [], isLoading } = useFetchNotifications();
   const markAsRead = useMarkAsRead();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [canHoverPointer, setCanHoverPointer] = useState(true);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  useEffect(() => {
+    const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const updatePointerMode = () => setCanHoverPointer(hoverQuery.matches);
+
+    updatePointerMode();
+    hoverQuery.addEventListener('change', updatePointerMode);
+
+    return () => hoverQuery.removeEventListener('change', updatePointerMode);
+  }, []);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [popoverOpen]);
 
   // RUNTIME REMINDER TAX Deadline & Profile Completion Checker (FR-14)
   useEffect(() => {
@@ -36,11 +62,19 @@ export default function NotificationCenter() {
   };
 
   return (
-    <div className="relative z-40 group/notif">
+    <div ref={popoverRef} className="relative z-40 group/notif">
       {/* BELL BELL BELL ICON WITH UNREAD BADGE */}
       <button
+        type="button"
+        onClick={() => {
+          if (!canHoverPointer) {
+            setPopoverOpen((current) => !current);
+          }
+        }}
         className="relative p-2 bg-slate-900 border border-slate-800/40 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all duration-200 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 flex items-center justify-center shadow-lg cursor-pointer"
         aria-label="Notifikasi Perpajakan"
+        aria-expanded={popoverOpen}
+        aria-haspopup="menu"
       >
         <svg className={`w-4 h-4 ${unreadCount > 0 ? 'animate-[swing_1.5s_ease-in-out_infinite] text-yellow-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.02 6.02 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -54,7 +88,7 @@ export default function NotificationCenter() {
       </button>
 
       {/* DROPDOWN GLASSMORPHIC POPOVER LIST */}
-      <div className="absolute right-0 top-full pt-3 w-72 sm:w-80 opacity-0 invisible group-hover/notif:opacity-100 group-hover/notif:visible transition-all duration-300 z-50 origin-top-right transform group-hover/notif:translate-y-0 translate-y-2 pointer-events-none group-hover/notif:pointer-events-auto">
+      <div className={`absolute right-0 top-full pt-3 w-72 sm:w-80 transition-all duration-300 z-50 origin-top-right transform ${popoverOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'} ${canHoverPointer ? 'group-hover/notif:opacity-100 group-hover/notif:visible group-hover/notif:translate-y-0 group-hover/notif:pointer-events-auto' : ''}`}>
         <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-800/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/40">

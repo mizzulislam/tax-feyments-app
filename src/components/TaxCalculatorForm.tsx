@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import {
+  PTKP_VALUES,
+  calculateAnnualPph21,
   calculateBphtb,
   calculateCorporateIncomeTax,
   calculateFinalTax,
@@ -12,7 +14,6 @@ import {
   calculatePph26,
   calculatePphUnification,
   calculatePpnBm,
-  calculateProgressiveTax,
   calculateStampDuty,
   calculateTaxPenalty,
   calculateVat,
@@ -25,12 +26,13 @@ import {
   type PpnBmRateBand,
   type FinalTaxObject,
   type Pph23Object,
+  type PtkpStatus,
   type VatMode,
+  type CorporateTaxMode,
 } from '@/lib/taxEngine';
 import { useMutateReport } from '@/hooks/useMutateReport';
 import Tooltip from './Tooltip';
 
-type PTKPStatus = 'TK/0' | 'TK/1' | 'K/0' | 'K/1' | 'K/2' | 'K/3';
 type TaxPeriod = '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
 export type CalculatorType = 'pph21' | 'ppn' | 'ppnbm' | 'pph23' | 'pphUnifikasi' | 'pphFinal' | 'pph26' | 'pphBadan' | 'bphtb' | 'pbbP2' | 'pajakDaerah' | 'sanksiPajak' | 'beaMeterai';
 
@@ -61,6 +63,15 @@ const parseFormattedNumber = (value: string) => {
   const normalized = value.replace(/[^\d]/g, '');
   return normalized ? Number(normalized) : 0;
 };
+const parseDecimalNumber = (value: string) => {
+  const normalized = value.replace(',', '.').replace(/[^\d.]/g, '');
+  const firstDotIndex = normalized.indexOf('.');
+  const decimal = firstDotIndex === -1
+    ? normalized
+    : `${normalized.slice(0, firstDotIndex + 1)}${normalized.slice(firstDotIndex + 1).replace(/\./g, '')}`;
+  const parsed = Number(decimal);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 const currentYear = new Date().getFullYear();
 
 const taxPeriodOptions: SelectOption[] = [
@@ -81,6 +92,8 @@ const taxPeriodOptions: SelectOption[] = [
 const ptkpOptions: SelectOption[] = [
   { value: 'TK/0', label: 'TK/0 - Tidak Kawin (Rp 54.000.000)' },
   { value: 'TK/1', label: 'TK/1 - Tidak Kawin, 1 Tanggungan (Rp 58.500.000)' },
+  { value: 'TK/2', label: 'TK/2 - Tidak Kawin, 2 Tanggungan (Rp 63.000.000)' },
+  { value: 'TK/3', label: 'TK/3 - Tidak Kawin, 3 Tanggungan (Rp 67.500.000)' },
   { value: 'K/0', label: 'K/0 - Kawin, Tanpa Tanggungan (Rp 58.500.000)' },
   { value: 'K/1', label: 'K/1 - Kawin, 1 Tanggungan (Rp 63.000.000)' },
   { value: 'K/2', label: 'K/2 - Kawin, 2 Tanggungan (Rp 67.500.000)' },
@@ -129,6 +142,12 @@ const pph26Options: SelectOption[] = [
   { value: 'gross_income', label: 'Dividen/Bunga/Royalti/Jasa/Sewa - 20% bruto' },
   { value: 'asset_transfer', label: 'Pengalihan harta tertentu - efektif 5%' },
   { value: 'insurance_premium', label: 'Premi asuransi luar negeri - basis neto 50%' },
+];
+
+const corporateTaxModeOptions: SelectOption[] = [
+  { value: 'general', label: 'WP Badan umum - 22%' },
+  { value: 'public_company', label: 'Perseroan terbuka memenuhi syarat - 19%' },
+  { value: 'umkm_final', label: 'Badan UMKM final - 0,5% omzet' },
 ];
 
 const localTaxOptions: SelectOption[] = [
@@ -353,7 +372,10 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
 
   // Step 2: Pengurang & PTKP
   const [iuranPensiun, setIuranPensiun] = useState<number>(0);
-  const [ptkpStatus, setPtkpStatus] = useState<PTKPStatus>('TK/0');
+  const [zakatSumbangan, setZakatSumbangan] = useState<number>(0);
+  const [previousNetIncome, setPreviousNetIncome] = useState<number>(0);
+  const [withheldTaxCredit, setWithheldTaxCredit] = useState<number>(0);
+  const [ptkpStatus, setPtkpStatus] = useState<PtkpStatus>('TK/0');
 
   // Kalkulator pajak lainnya
   const [transactionAmount, setTransactionAmount] = useState<number>(0);
@@ -365,6 +387,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const [pph26Object, setPph26Object] = useState<Pph26Object>('gross_income');
   const [treatyRatePercent, setTreatyRatePercent] = useState<number>(20);
   const [finalTaxObject, setFinalTaxObject] = useState<FinalTaxObject>('umkm_individual');
+  const [corporateTaxMode, setCorporateTaxMode] = useState<CorporateTaxMode>('general');
   const [corporateTaxableIncome, setCorporateTaxableIncome] = useState<number>(0);
   const [corporateGrossTurnover, setCorporateGrossTurnover] = useState<number>(0);
   const [useCorporateFacility, setUseCorporateFacility] = useState(true);
@@ -380,6 +403,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const handleNumberInput = (value: string, setter: (val: number) => void) => {
     setter(Math.max(0, parseFormattedNumber(value)));
   };
+  const handleDecimalInput = (value: string, setter: (val: number) => void) => {
+    setter(Math.max(0, parseDecimalNumber(value)));
+  };
 
   // Perhitungan Otomatis
   const grossIncome = gaji + tunjangan + bonus;
@@ -389,29 +415,23 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   let estimatedTax = 0;
   let biayaJabatan = 0;
   let totalPengurang = 0;
-  let netIncome = grossIncome;
   
-  // Peta PTKP UU HPP
-  const ptkpMap: Record<PTKPStatus, number> = {
-    'TK/0': 54000000,
-    'TK/1': 58500000,
-    'K/0': 58500000,
-    'K/1': 63000000,
-    'K/2': 67500000,
-    'K/3': 72000000,
-  };
-  const ptkpValue = ptkpMap[ptkpStatus];
+  const ptkpValue = PTKP_VALUES[ptkpStatus];
   let pkp = 0;
+  const annualPph21Result = calculateAnnualPph21({
+    grossIncome,
+    ptkpStatus,
+    pensionContribution: iuranPensiun,
+    religiousContribution: zakatSumbangan,
+    previousNetIncome,
+    withheldTaxCredit,
+  });
 
   if (isAnnual) {
-    // Biaya Jabatan = 5% dari Bruto, maks 6.000.000 setahun
-    biayaJabatan = Math.min(grossIncome * 0.05, 6000000);
-    totalPengurang = biayaJabatan + iuranPensiun;
-    netIncome = Math.max(0, grossIncome - totalPengurang);
-    // PKP = Neto - PTKP (tidak boleh negatif)
-    pkp = Math.max(0, netIncome - ptkpValue);
-    // Pajak Terutang Progresif Pasal 17
-    estimatedTax = calculateProgressiveTax(pkp);
+    biayaJabatan = annualPph21Result.jobExpense;
+    totalPengurang = annualPph21Result.totalDeduction;
+    pkp = annualPph21Result.taxableIncome;
+    estimatedTax = annualPph21Result.annualTax;
   } else {
     // Bulanan dengan skema TER PPh 21 PP 58/2023
     estimatedTax = calculateMonthlyTerTax(grossIncome, ptkpStatus);
@@ -425,18 +445,28 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const pphUnificationResult = calculatePphUnification(transactionAmount, pphUnificationObject, withoutNpwp);
   const pph26Result = calculatePph26(transactionAmount, pph26Object, treatyRatePercent / 100);
   const finalTaxResult = calculateFinalTax(transactionAmount, finalTaxObject);
-  const corporateTaxResult = calculateCorporateIncomeTax(corporateTaxableIncome, corporateGrossTurnover, useCorporateFacility);
+  const corporateTaxResult = calculateCorporateIncomeTax(corporateTaxableIncome, corporateGrossTurnover, useCorporateFacility, corporateTaxMode);
   const bphtbResult = calculateBphtb(transactionAmount, propertyNjop, bphtbNpoptkp);
   const pbbP2Result = calculatePbbP2(transactionAmount, pbbNjoptkp);
   const localTaxResult = calculateLocalTax(transactionAmount, localTaxObject, localTaxRatePercent / 100);
   const taxPenaltyResult = calculateTaxPenalty(transactionAmount, taxPenaltyObject, penaltyMonths);
   const stampDuty = calculateStampDuty(transactionAmount);
+  const pph21DisplayTax = isAnnual ? annualPph21Result.taxDue : estimatedTax;
+  const selectedCalculatorOption = calculatorOptions.find((option) => option.id === calculatorType);
+  const stepTracker = (
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1.5">
+      <span className={`h-2 w-2 rounded-full ${step >= 1 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
+      <span className={`h-2 w-2 rounded-full ${step >= 2 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
+      <span className={`h-2 w-2 rounded-full ${step >= 3 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
+      <span className="ml-1 text-[10px] font-bold text-slate-400">Step {step}/3</span>
+    </div>
+  );
 
   // Handle Pengiriman
   const handleSave = (status: 'draft' | 'submitted') => {
     mutate({
       taxYear,
-      taxPeriod,
+      taxPeriod: isAnnual ? '12' : taxPeriod,
       grossIncome,
       ptkpStatus,
       pensionContribution: iuranPensiun,
@@ -454,6 +484,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
         setTunjangan(0);
         setBonus(0);
         setIuranPensiun(0);
+        setZakatSumbangan(0);
+        setPreviousNetIncome(0);
+        setWithheldTaxCredit(0);
         setPtkpStatus('TK/0');
       }
     });
@@ -469,36 +502,25 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
         <div className="relative z-10 mb-8">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Kalkulator Pajak Terpadu</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator Pajak Terpadu</h2>
               <p className="text-xs text-slate-400 mt-1">Masukkan dasar pengenaan, lalu lihat estimasi pajak dan rincian tarifnya.</p>
             </div>
-            <span className="hidden rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-300 sm:inline-flex">
-              Multi Pajak
-            </span>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
+          <div className="grid gap-3">
             <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Workflow</p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 {[
-                  ['Pilih jenis', 'pajak'],
-                  ['Isi dasar', 'pengenaan'],
-                  ['Baca', 'estimasi'],
+                  'Pilih jenis pajak',
+                  'Isi dasar pengenaan',
+                  'Baca estimasi',
                 ].map((item, index) => (
-                  <div key={item} className="contents">
-                    <div className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/45 px-3 py-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500/25 bg-blue-500/10 text-[9px] font-black text-blue-300">{index + 1}</span>
-                      <span className="min-w-[74px] whitespace-nowrap text-[10px] font-bold leading-snug text-slate-300">
-                        <span className="block">{item[0]}</span>
-                        <span className="block">{item[1]}</span>
-                      </span>
-                    </div>
-                    {index < 2 && (
-                      <div className="mx-auto h-4 w-px bg-gradient-to-b from-blue-500/20 via-blue-400/70 to-blue-500/20 sm:h-px sm:w-6 sm:bg-gradient-to-r">
-                        <span className="block h-1.5 w-1.5 -translate-x-[3px] translate-y-[13px] rotate-[135deg] border-r border-t border-blue-300/80 sm:translate-x-[22px] sm:-translate-y-[3px] sm:rotate-45" />
-                      </div>
-                    )}
+                  <div key={item} className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/45 px-3 py-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500/25 bg-blue-500/10 text-[9px] font-black text-blue-300">{index + 1}</span>
+                    <span className="min-w-0 whitespace-nowrap text-[10px] font-bold leading-snug text-slate-300">
+                      {item}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -507,7 +529,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
             <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Regulasi</p>
               <p className="mt-4 text-xs font-semibold leading-relaxed text-slate-400 sm:mt-6">
-                Tarif daerah mengikuti Perda masing-masing daerah. Sanksi bunga memakai KMK 19/MK/EF.2/2026 periode Mei 2026.
+                PPh 21 memakai TER PP 58/2023 dan rekonsiliasi tahunan Pasal 17. Tarif daerah mengikuti Perda, sedangkan sanksi bunga memakai KMK 19/MK/EF.2/2026 periode Mei 2026.
               </p>
             </div>
           </div>
@@ -515,6 +537,15 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
 
         {calculatorType !== 'pph21' ? (
           <div className="relative z-10 space-y-6">
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                Kalkulator {selectedCalculatorOption?.title ?? 'Pajak'}
+              </h2>
+              <p className="mt-1 text-xs text-slate-400">
+                {selectedCalculatorOption?.subtitle ?? 'Masukkan dasar pengenaan, lalu lihat estimasi pajaknya.'}
+              </p>
+            </div>
+
             <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="space-y-5">
                 <div className="space-y-1.5">
@@ -666,7 +697,10 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <input
                         type="number"
                         value={treatyRatePercent}
-                        onChange={(e) => handleNumberInput(e.target.value, setTreatyRatePercent)}
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        onChange={(e) => handleDecimalInput(e.target.value, setTreatyRatePercent)}
                         className="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
                       />
                     </div>
@@ -677,8 +711,22 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   <>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                        Skema PPh Badan
+                        <Tooltip content="Pilih tarif badan umum 22%, perseroan terbuka yang memenuhi syarat 19%, atau PPh Final UMKM 0,5% dari omzet." />
+                      </label>
+                      <ModernSelect
+                        id="corporateTaxMode"
+                        value={corporateTaxMode}
+                        options={corporateTaxModeOptions}
+                        open={openSelect === 'corporateTaxMode'}
+                        onToggle={setOpenSelect}
+                        onChange={(value) => setCorporateTaxMode(value as CorporateTaxMode)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
                         Penghasilan Kena Pajak Badan
-                        <Tooltip content="Masukkan laba fiskal atau PKP badan setelah koreksi fiskal dan kompensasi rugi." />
+                        <Tooltip content={corporateTaxMode === 'umkm_final' ? "Opsional untuk skema UMKM final karena pajak dihitung dari omzet bruto." : "Masukkan laba fiskal atau PKP badan setelah koreksi fiskal dan kompensasi rugi."} />
                       </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-xs font-semibold text-slate-500">Rp</span>
@@ -715,6 +763,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         type="checkbox"
                         checked={useCorporateFacility}
                         onChange={(e) => setUseCorporateFacility(e.target.checked)}
+                        disabled={corporateTaxMode !== 'general'}
                         className="h-4 w-4 accent-blue-500"
                       />
                     </label>
@@ -804,7 +853,10 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <input
                         type="number"
                         value={localTaxRatePercent}
-                        onChange={(e) => handleNumberInput(e.target.value, setLocalTaxRatePercent)}
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        onChange={(e) => handleDecimalInput(e.target.value, setLocalTaxRatePercent)}
                         className="w-full rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 font-mono text-sm text-white outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
                       />
                     </div>
@@ -899,11 +951,19 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                     </>
                   )}
                   {calculatorType === 'pphBadan' && (
-                    <>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">PKP fasilitas:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.facilityIncome)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">PKP tarif normal:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.normalIncome)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif efektif:</span><span className="font-mono text-slate-200">{(corporateTaxResult.effectiveRate * 100).toFixed(2)}%</span></div>
-                    </>
+                    corporateTaxMode === 'umkm_final' ? (
+                      <>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">Omzet kena final:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.grossTurnover)}</span></div>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif final:</span><span className="font-mono text-slate-200">{(corporateTaxResult.rate * 100).toFixed(2)}%</span></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">PKP fasilitas:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.facilityIncome)}</span></div>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">PKP tarif normal:</span><span className="font-mono text-slate-200">{formatRupiah(corporateTaxResult.normalIncome)}</span></div>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif umum:</span><span className="font-mono text-slate-200">{(corporateTaxResult.rate * 100).toFixed(0)}%</span></div>
+                        <div className="flex justify-between gap-4"><span className="text-slate-500">Tarif efektif:</span><span className="font-mono text-slate-200">{(corporateTaxResult.effectiveRate * 100).toFixed(2)}%</span></div>
+                      </>
+                    )
                   )}
                   {calculatorType === 'bphtb' && (
                     <>
@@ -954,14 +1014,11 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
           {/* Header & Step Tracker */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Kalkulator Pajak Wizard</h2>
-              <p className="text-xs text-slate-400 mt-1">Multi-step Wizard UU HPP Terkini</p>
+              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator PPh 21</h2>
+              <p className="text-xs text-slate-400 mt-1">Isi penghasilan, pengurang, lalu lihat estimasi PPh 21.</p>
             </div>
-            <div className="flex items-center gap-1.5 bg-slate-950/60 px-3 py-1.5 rounded-full border border-slate-800">
-              <span className={`w-2 h-2 rounded-full ${step >= 1 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
-              <span className={`w-2 h-2 rounded-full ${step >= 2 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
-              <span className={`w-2 h-2 rounded-full ${step >= 3 ? 'bg-blue-500' : 'bg-slate-700'}`}></span>
-              <span className="text-[10px] font-bold text-slate-400 ml-1">Step {step}/3</span>
+            <div className="hidden sm:block">
+              {stepTracker}
             </div>
           </div>
 
@@ -986,7 +1043,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
                     Masa Pajak
-                    <Tooltip content="Periode pelaporan pajak bulanan menggunakan TER, atau pilih Desember untuk pelaporan SPT Pajak setahun penuh." />
+                    <Tooltip content="Periode pajak yang dihitung. Masa Januari-November memakai TER bulanan, sedangkan Desember dihitung sebagai rekonsiliasi setahun." />
                   </label>
                   <ModernSelect
                     id="taxPeriod"
@@ -1066,6 +1123,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   Lanjut Step 2
                 </button>
               </div>
+              <div className="flex justify-center sm:hidden">
+                {stepTracker}
+              </div>
             </div>
           )}
 
@@ -1079,21 +1139,74 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
               )}
 
               {isAnnual && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                    Iuran Pensiun / JHT Setahun
-                    <Tooltip content="Dana pensiun bulanan BPJS Ketenagakerjaan / Jaminan Hari Tua yang dipotong atau dibayarkan mandiri yang sah sebagai pengurang pajak." />
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberInput(iuranPensiun)}
-                      onChange={(e) => handleNumberInput(e.target.value, setIuranPensiun)}
-                      placeholder="0"
-                      className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                    />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                      Iuran Pensiun / JHT Setahun
+                      <Tooltip content="Iuran pensiun/THT/JHT yang dibayar pegawai dan dapat menjadi pengurang penghasilan bruto dalam penghitungan PPh 21 tahunan." />
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumberInput(iuranPensiun)}
+                        onChange={(e) => handleNumberInput(e.target.value, setIuranPensiun)}
+                        placeholder="0"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                      Zakat / Sumbangan Wajib
+                      <Tooltip content="Zakat atau sumbangan keagamaan wajib yang dibayarkan melalui lembaga resmi dan memenuhi syarat sebagai pengurang." />
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumberInput(zakatSumbangan)}
+                        onChange={(e) => handleNumberInput(e.target.value, setZakatSumbangan)}
+                        placeholder="0"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                      Neto Sebelumnya
+                      <Tooltip content="Isi jika pegawai pindah kerja atau ada penghasilan neto dari masa/pemberi kerja sebelumnya yang harus digabung setahun." />
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumberInput(previousNetIncome)}
+                        onChange={(e) => handleNumberInput(e.target.value, setPreviousNetIncome)}
+                        placeholder="0"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                      Kredit PPh 21 Dipotong
+                      <Tooltip content="Jumlah PPh 21 yang sudah dipotong pada masa sebelumnya atau oleh pemberi kerja lain, untuk menghitung kurang/lebih bayar akhir tahun." />
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumberInput(withheldTaxCredit)}
+                        onChange={(e) => handleNumberInput(e.target.value, setWithheldTaxCredit)}
+                        placeholder="0"
+                        className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1109,7 +1222,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   options={ptkpOptions}
                   open={openSelect === 'ptkpStatus'}
                   onToggle={setOpenSelect}
-                  onChange={(value) => setPtkpStatus(value as PTKPStatus)}
+                  onChange={(value) => setPtkpStatus(value as PtkpStatus)}
                 />
               </div>
 
@@ -1126,6 +1239,10 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   <div className="flex justify-between border-t border-slate-800/50 pt-2 font-bold">
                     <span className="text-slate-400">Total Pengurang:</span>
                     <span className="text-white font-mono">Rp {totalPengurang.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-800/50 pt-2">
+                    <span className="text-slate-500">Kredit PPh 21:</span>
+                    <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.withheldTaxCredit.toLocaleString('id-ID')}</span>
                   </div>
                 </div>
               ) : (
@@ -1167,6 +1284,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   Lanjut Step 3
                 </button>
               </div>
+              <div className="flex justify-center sm:hidden">
+                {stepTracker}
+              </div>
             </div>
           )}
 
@@ -1178,12 +1298,17 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   {isAnnual ? 'Pasal 17 Progresif' : 'TER PPh 21'}
                 </div>
                 <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase">
-                  {isAnnual ? 'Estimasi Pajak Terutang Setahun' : 'Estimasi Pajak Terutang Bulanan'}
+                  {isAnnual ? 'Estimasi PPh 21 Kurang Bayar' : 'Estimasi Pajak Terutang Bulanan'}
                 </span>
                 <p className="text-3xl font-black text-white mt-1 font-mono">
                   <span className="text-lg text-blue-400 font-medium mr-1">Rp</span>
-                  {estimatedTax.toLocaleString('id-ID')}
+                  {pph21DisplayTax.toLocaleString('id-ID')}
                 </p>
+                {isAnnual && annualPph21Result.overpaidTax > 0 && (
+                  <p className="mt-2 text-xs font-bold text-emerald-300">
+                    Lebih bayar {formatRupiah(annualPph21Result.overpaidTax)}
+                  </p>
+                )}
               </div>
 
               <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs font-medium">
@@ -1198,8 +1323,12 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <span className="font-semibold text-slate-300 font-mono">Rp {totalPengurang.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Penghasilan Neto:</span>
-                      <span className="font-semibold text-slate-300 font-mono">Rp {netIncome.toLocaleString('id-ID')}</span>
+                      <span className="text-slate-500">Neto Sebelumnya:</span>
+                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.previousNetIncome.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Neto Setahun:</span>
+                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.netIncomeForTax.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between border-b border-slate-800/50 pb-2">
                       <span className="text-slate-500">PTKP ({ptkpStatus}):</span>
@@ -1211,6 +1340,14 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                         <Tooltip content="Penghasilan Kena Pajak. Hasil sisa pendapatan bersih setelah dikurangi PTKP yang digunakan sebagai basis pengenaan PPh." />
                       </span>
                       <span className="text-white font-mono">Rp {pkp.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between pt-1.5">
+                      <span className="text-slate-500">PPh 21 Setahun:</span>
+                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.annualTax.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Kredit Pajak:</span>
+                      <span className="font-semibold text-slate-300 font-mono">Rp {annualPph21Result.withheldTaxCredit.toLocaleString('id-ID')}</span>
                     </div>
                   </>
                 ) : (
@@ -1274,6 +1411,9 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
                   {isPending ? 'Mengirim Data...' : 'Submit Resmi Laporan'}
                 </button>
+                <div className="flex justify-center sm:hidden">
+                  {stepTracker}
+                </div>
               </div>
             </div>
           )}

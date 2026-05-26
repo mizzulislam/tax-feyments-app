@@ -35,23 +35,23 @@ export default function TaxBreakdownPieChart({ data }: TaxBreakdownPieChartProps
   const totalValue = displayData.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl h-[360px] flex flex-col">
+    <div className="relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl h-[270px] md:h-[360px] flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/15 via-blue-500/5 to-transparent opacity-40"></div>
       
-      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-6 rounded-[23px] flex flex-col justify-between">
+      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-4 md:p-6 rounded-[18px] md:rounded-[23px] flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
-            <h3 className="text-md font-bold text-white tracking-tight">Proporsi Kategori Penghasilan</h3>
+            <h3 className="text-sm md:text-md font-bold text-white tracking-tight">Proporsi Kategori Penghasilan</h3>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[10px] md:text-[11px] text-slate-400">
             {isEmpty ? 'Visualisasi Data Transaksi Simulasi' : 'Alokasi Nominal Keuangan Anda Berdasarkan Kategori'}
           </p>
         </div>
 
-        <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-4 min-h-[220px]">
+        <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-4 min-h-[165px] md:min-h-[220px]">
           {/* Donut Chart */}
-          <div className="w-40 h-40 flex-shrink-0 relative">
+          <div className="w-28 h-28 md:w-40 md:h-40 flex-shrink-0 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip
@@ -81,8 +81,8 @@ export default function TaxBreakdownPieChart({ data }: TaxBreakdownPieChartProps
                   data={displayData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
+                  innerRadius="62%"
+                  outerRadius="87%"
                   paddingAngle={3}
                   dataKey="value"
                 >
@@ -102,7 +102,7 @@ export default function TaxBreakdownPieChart({ data }: TaxBreakdownPieChartProps
           </div>
 
           {/* Simple Legend Column */}
-          <div className="flex-1 w-full max-h-[160px] overflow-y-auto custom-scrollbar space-y-1.5 pr-2">
+          <div className="flex-1 w-full max-h-[70px] md:max-h-[160px] overflow-y-auto custom-scrollbar space-y-1 md:space-y-1.5 pr-2">
             {displayData.map((item, idx) => {
               const pct = totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(0) : 0;
               return (

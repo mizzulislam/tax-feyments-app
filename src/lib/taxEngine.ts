@@ -1,5 +1,27 @@
 import type { IncomeSource } from '@/types/taxpayer';
 
+export type PtkpStatus = 'TK/0' | 'TK/1' | 'TK/2' | 'TK/3' | 'K/0' | 'K/1' | 'K/2' | 'K/3';
+
+export const PTKP_VALUES: Record<PtkpStatus, number> = {
+  'TK/0': 54_000_000,
+  'TK/1': 58_500_000,
+  'TK/2': 63_000_000,
+  'TK/3': 67_500_000,
+  'K/0': 58_500_000,
+  'K/1': 63_000_000,
+  'K/2': 67_500_000,
+  'K/3': 72_000_000,
+};
+
+export function normalizePtkpStatus(ptkpStatus: string): PtkpStatus {
+  const status = ptkpStatus.toUpperCase().replace(/\s+/g, '');
+  return status in PTKP_VALUES ? status as PtkpStatus : 'TK/0';
+}
+
+export function roundDownTaxableIncome(value: number): number {
+  return Math.floor(Math.max(0, value) / 1000) * 1000;
+}
+
 /**
  * Menghitung PPh Pasal 17 Orang Pribadi berdasarkan UU HPP (Tahunan)
  * @param pkp Penghasilan Kena Pajak dalam Rupiah (Tahunan)
@@ -39,7 +61,7 @@ export type TERCategory = 'A' | 'B' | 'C';
  * @returns Kategori TER
  */
 export function getTerCategory(ptkpStatus: string): TERCategory {
-  const status = ptkpStatus.toUpperCase().replace(/\s+/g, '');
+  const status = normalizePtkpStatus(ptkpStatus);
   if (['TK/0', 'TK/1', 'K/0'].includes(status)) {
     return 'A';
   } else if (['TK/2', 'TK/3', 'K/1', 'K/2'].includes(status)) {
@@ -189,6 +211,73 @@ export function calculateMonthlyTerTax(grossMonthly: number, ptkpStatus: string)
   return Math.round(grossMonthly * rate);
 }
 
+export interface Pph21AnnualInput {
+  grossIncome: number;
+  ptkpStatus: string;
+  pensionContribution?: number;
+  religiousContribution?: number;
+  previousNetIncome?: number;
+  withheldTaxCredit?: number;
+}
+
+export interface Pph21AnnualResult {
+  grossIncome: number;
+  jobExpense: number;
+  pensionContribution: number;
+  religiousContribution: number;
+  totalDeduction: number;
+  currentNetIncome: number;
+  previousNetIncome: number;
+  netIncomeForTax: number;
+  ptkpValue: number;
+  taxableIncome: number;
+  annualTax: number;
+  withheldTaxCredit: number;
+  taxDue: number;
+  overpaidTax: number;
+}
+
+export function calculateAnnualPph21({
+  grossIncome,
+  ptkpStatus,
+  pensionContribution = 0,
+  religiousContribution = 0,
+  previousNetIncome = 0,
+  withheldTaxCredit = 0,
+}: Pph21AnnualInput): Pph21AnnualResult {
+  const safeGrossIncome = Math.max(0, grossIncome);
+  const safePensionContribution = Math.max(0, pensionContribution);
+  const safeReligiousContribution = Math.max(0, religiousContribution);
+  const safePreviousNetIncome = Math.max(0, previousNetIncome);
+  const safeWithheldTaxCredit = Math.max(0, withheldTaxCredit);
+  const ptkpValue = PTKP_VALUES[normalizePtkpStatus(ptkpStatus)];
+  const jobExpense = Math.min(safeGrossIncome * 0.05, 6_000_000);
+  const totalDeduction = jobExpense + safePensionContribution + safeReligiousContribution;
+  const currentNetIncome = Math.max(0, safeGrossIncome - totalDeduction);
+  const netIncomeForTax = currentNetIncome + safePreviousNetIncome;
+  const taxableIncome = roundDownTaxableIncome(netIncomeForTax - ptkpValue);
+  const annualTax = Math.round(calculateProgressiveTax(taxableIncome));
+  const taxDue = Math.max(0, annualTax - safeWithheldTaxCredit);
+  const overpaidTax = Math.max(0, safeWithheldTaxCredit - annualTax);
+
+  return {
+    grossIncome: safeGrossIncome,
+    jobExpense,
+    pensionContribution: safePensionContribution,
+    religiousContribution: safeReligiousContribution,
+    totalDeduction,
+    currentNetIncome,
+    previousNetIncome: safePreviousNetIncome,
+    netIncomeForTax,
+    ptkpValue,
+    taxableIncome,
+    annualTax,
+    withheldTaxCredit: safeWithheldTaxCredit,
+    taxDue,
+    overpaidTax,
+  };
+}
+
 export interface ConsolidatedTaxResult {
   totalGrossProgressive: number;
   biayaJabatan: number;
@@ -213,20 +302,7 @@ export function calculateConsolidatedTax(
   sources: IncomeSource[],
   ptkpStatus: string
 ): ConsolidatedTaxResult {
-  // Peta PTKP UU HPP
-  const ptkpMap: Record<string, number> = {
-    'TK/0': 54000000,
-    'TK/1': 58500000,
-    'TK/2': 63000000,
-    'TK/3': 67500000,
-    'K/0': 58500000,
-    'K/1': 63000000,
-    'K/2': 67500000,
-    'K/3': 72000000,
-  };
-
-  const statusKey = ptkpStatus.toUpperCase().replace(/\s+/g, '');
-  const ptkpValue = ptkpMap[statusKey] || ptkpMap['TK/0'];
+  const ptkpValue = PTKP_VALUES[normalizePtkpStatus(ptkpStatus)];
 
   let totalGrossProgressive = 0;
   let totalUsahaOmzet = 0;
@@ -260,7 +336,7 @@ export function calculateConsolidatedTax(
   const netProgressive = Math.max(0, totalGrossProgressive - biayaJabatan);
 
   // PKP (Penghasilan Kena Pajak)
-  const pkp = Math.max(0, netProgressive - ptkpValue);
+  const pkp = roundDownTaxableIncome(netProgressive - ptkpValue);
 
   // PPh Terutang Progresif (UU HPP Pasal 17)
   const estimatedProgressiveTax = calculateProgressiveTax(pkp);
@@ -399,18 +475,60 @@ export function calculateFinalTax(amount: number, object: FinalTaxObject): Withh
 }
 
 export interface CorporateTaxResult {
+  mode: CorporateTaxMode;
   taxableIncome: number;
   grossTurnover: number;
   facilityIncome: number;
   normalIncome: number;
+  rate: number;
   tax: number;
   effectiveRate: number;
 }
 
-export function calculateCorporateIncomeTax(taxableIncome: number, grossTurnover: number, useSmallBusinessFacility = true): CorporateTaxResult {
+export type CorporateTaxMode = 'general' | 'public_company' | 'umkm_final';
+
+export function calculateCorporateIncomeTax(
+  taxableIncome: number,
+  grossTurnover: number,
+  useSmallBusinessFacility = true,
+  mode: CorporateTaxMode = 'general'
+): CorporateTaxResult {
   const safeTaxableIncome = Math.max(0, taxableIncome);
   const safeGrossTurnover = Math.max(0, grossTurnover);
   const normalRate = 0.22;
+
+  if (mode === 'public_company') {
+    const publicCompanyRate = 0.19;
+    const tax = Math.round(safeTaxableIncome * publicCompanyRate);
+
+    return {
+      mode,
+      taxableIncome: safeTaxableIncome,
+      grossTurnover: safeGrossTurnover,
+      facilityIncome: 0,
+      normalIncome: safeTaxableIncome,
+      rate: publicCompanyRate,
+      tax,
+      effectiveRate: safeTaxableIncome > 0 ? tax / safeTaxableIncome : 0,
+    };
+  }
+
+  if (mode === 'umkm_final') {
+    const finalRate = 0.005;
+    const tax = Math.round(safeGrossTurnover * finalRate);
+
+    return {
+      mode,
+      taxableIncome: safeTaxableIncome,
+      grossTurnover: safeGrossTurnover,
+      facilityIncome: safeGrossTurnover,
+      normalIncome: 0,
+      rate: finalRate,
+      tax,
+      effectiveRate: safeGrossTurnover > 0 ? tax / safeGrossTurnover : 0,
+    };
+  }
+
   const facilityRate = normalRate * 0.5;
 
   let facilityIncome = 0;
@@ -423,10 +541,12 @@ export function calculateCorporateIncomeTax(taxableIncome: number, grossTurnover
   const tax = Math.round((facilityIncome * facilityRate) + (normalIncome * normalRate));
 
   return {
+    mode,
     taxableIncome: safeTaxableIncome,
     grossTurnover: safeGrossTurnover,
     facilityIncome,
     normalIncome,
+    rate: normalRate,
     tax,
     effectiveRate: safeTaxableIncome > 0 ? tax / safeTaxableIncome : 0,
   };

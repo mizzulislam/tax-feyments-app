@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   calculateBphtb,
+  calculateAnnualPph21,
   calculateCorporateIncomeTax,
   calculateConsolidatedTax,
   calculateFinalTax,
@@ -29,10 +30,30 @@ test('calculateProgressiveTax applies UU HPP progressive brackets', () => {
 
 test('TER category and monthly tax use PTKP status brackets', () => {
   assert.equal(getTerCategory('TK/0'), 'A');
+  assert.equal(getTerCategory('TK/2'), 'B');
   assert.equal(getTerCategory('K/1'), 'B');
   assert.equal(getTerCategory('K/3'), 'C');
   assert.equal(calculateMonthlyTerTax(5_000_000, 'TK/0'), 0);
   assert.equal(calculateMonthlyTerTax(6_000_000, 'TK/0'), 45_000);
+});
+
+test('calculateAnnualPph21 reconciles deductions, previous net income, and credits', () => {
+  const result = calculateAnnualPph21({
+    grossIncome: 120_000_000,
+    ptkpStatus: 'TK/2',
+    pensionContribution: 2_400_000,
+    religiousContribution: 600_000,
+    previousNetIncome: 20_000_000,
+    withheldTaxCredit: 1_500_000,
+  });
+
+  assert.equal(result.jobExpense, 6_000_000);
+  assert.equal(result.currentNetIncome, 111_000_000);
+  assert.equal(result.netIncomeForTax, 131_000_000);
+  assert.equal(result.ptkpValue, 63_000_000);
+  assert.equal(result.taxableIncome, 68_000_000);
+  assert.equal(result.annualTax, 4_200_000);
+  assert.equal(result.taxDue, 2_700_000);
 });
 
 test('calculateUmkmTax respects WPOP Rp500 juta threshold', () => {
@@ -100,6 +121,11 @@ test('calculateCorporateIncomeTax applies small business facility proportionally
   assert.equal(result.facilityIncome, 480_000_000);
   assert.equal(result.normalIncome, 520_000_000);
   assert.equal(result.tax, 167_200_000);
+});
+
+test('calculateCorporateIncomeTax supports public company and UMKM final modes', () => {
+  assert.equal(calculateCorporateIncomeTax(1_000_000_000, 0, false, 'public_company').tax, 190_000_000);
+  assert.equal(calculateCorporateIncomeTax(0, 600_000_000, false, 'umkm_final').tax, 3_000_000);
 });
 
 test('calculateStampDuty applies Rp10.000 above Rp5 juta document value', () => {

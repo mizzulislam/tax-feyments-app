@@ -25,24 +25,24 @@ export default function YearComparisonChart({ data }: YearComparisonChartProps) 
   };
 
   return (
-    <div className="relative p-[1px] rounded-3xl overflow-hidden group shadow-2xl h-[360px] flex flex-col">
+    <div className="relative p-[1px] rounded-2xl md:rounded-3xl overflow-hidden group shadow-2xl h-[250px] md:h-[360px] flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-b from-rose-500/10 via-indigo-500/5 to-transparent opacity-40"></div>
       
-      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-6 rounded-[23px] flex flex-col justify-between">
+      <div className="relative flex-1 bg-slate-900/85 backdrop-blur-2xl p-4 md:p-6 rounded-[18px] md:rounded-[23px] flex flex-col justify-between">
         <div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                <h3 className="text-md font-bold text-white tracking-tight">Komparasi Pajak YoY</h3>
+                <h3 className="text-sm md:text-md font-bold text-white tracking-tight">Komparasi Pajak YoY</h3>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[10px] md:text-[11px] text-slate-400 mt-0.5">
                 {isEmpty ? 'Visualisasi Data Tahunan Simulasi' : 'Perbandingan Side-by-Side Pendapatan vs Pajak per Tahun'}
               </p>
             </div>
             
             {/* Legend */}
-            <div className="flex items-center gap-4 text-[10px] font-bold">
+            <div className="flex items-center gap-3 md:gap-4 text-[10px] font-bold">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
                 <span className="text-slate-400">Bruto</span>
@@ -56,7 +56,7 @@ export default function YearComparisonChart({ data }: YearComparisonChartProps) 
         </div>
 
         {/* Chart Container */}
-        <div className="flex-1 w-full h-full min-h-[220px]">
+        <div className="flex-1 w-full h-full min-h-[150px] md:min-h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={displayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>

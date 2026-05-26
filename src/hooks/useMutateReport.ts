@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TaxReportInput, taxReportSchema } from '@/types/taxpayer';
+import type { PtkpStatus } from '@/lib/taxEngine';
 
 export interface MutateReportData extends TaxReportInput {
   status?: 'draft' | 'submitted';
-  ptkpStatus?: 'TK/0' | 'TK/1' | 'K/0' | 'K/1' | 'K/2' | 'K/3';
+  ptkpStatus?: PtkpStatus;
   pensionContribution?: number;
 }
 

@@ -918,7 +918,7 @@ export default function ProfileSettingsPage() {
                 <label className={labelClass}>Foto Diri</label>
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
                   <div
-                    className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-blue-500/25 bg-blue-600/10 bg-cover bg-center text-2xl font-bold text-blue-200"
+                    className="flex aspect-square w-full max-w-sm flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-blue-500/25 bg-blue-600/10 bg-cover bg-center text-5xl font-bold text-blue-200 sm:h-20 sm:w-20 sm:max-w-none sm:text-2xl"
                     style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
                   >
                     {!avatarUrl && initials}
