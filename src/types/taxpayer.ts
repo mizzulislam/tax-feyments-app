@@ -91,6 +91,7 @@ export const incomeSourceSchema = z.object({
   isTaxWithheld: z.boolean().default(false),
   withheldAmount: z.number().finite().min(0, { message: "Jumlah PPh dipotong tidak boleh negatif." }).max(maxFinancialAmount).default(0),
   notes: z.string().optional().nullable(),
+  registrationYearForUmkm: z.number().int().min(1950, { message: "Tahun registrasi tidak valid" }).max(new Date().getFullYear()).optional().nullable(),
 });
 
 export type IncomeSourceInput = z.infer<typeof incomeSourceSchema>;

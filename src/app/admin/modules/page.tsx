@@ -7,54 +7,7 @@ import { useAdminModules, useDeleteAdminModule, useSaveAdminModule, useSeedAdmin
 import { CmsTaxModule, CmsTaxModuleInput } from '@/types/taxpayer';
 import { useAlert } from '@/contexts/AlertContext';
 
-const CMS_MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.tax_learning_modules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    slug TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    short_title TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    difficulty TEXT NOT NULL DEFAULT 'dasar' CHECK (difficulty IN ('dasar', 'menengah', 'lanjut')),
-    category TEXT NOT NULL DEFAULT 'PPh',
-    status TEXT NOT NULL DEFAULT 'belum' CHECK (status IN ('belum', 'sedang', 'selesai')),
-    quiz_score INT,
-    estimated_minutes INT NOT NULL DEFAULT 10 CHECK (estimated_minutes > 0),
-    icon TEXT NOT NULL DEFAULT 'file',
-    intro TEXT NOT NULL DEFAULT '',
-    learning_goals TEXT[] NOT NULL DEFAULT '{}',
-    core_concept TEXT NOT NULL DEFAULT '',
-    key_points TEXT[] NOT NULL DEFAULT '{}',
-    analogy_title TEXT NOT NULL DEFAULT 'Analogi',
-    analogy TEXT NOT NULL DEFAULT '',
-    relevance_title TEXT NOT NULL DEFAULT 'Relevansi Praktis',
-    relevance TEXT NOT NULL DEFAULT '',
-    practical_checklist TEXT[] NOT NULL DEFAULT '{}',
-    next_steps TEXT[] NOT NULL DEFAULT '{}',
-    caution TEXT NOT NULL DEFAULT '',
-    is_published BOOLEAN NOT NULL DEFAULT false,
-    order_index INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
 
-CREATE INDEX IF NOT EXISTS idx_tax_learning_modules_published_order
-ON public.tax_learning_modules(is_published, order_index);
-
-ALTER TABLE public.tax_learning_modules ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Published tax modules readable" ON public.tax_learning_modules;
-CREATE POLICY "Published tax modules readable"
-ON public.tax_learning_modules
-FOR SELECT
-TO authenticated
-USING (is_published = true);
-
-DROP POLICY IF EXISTS "Admin manage tax modules" ON public.tax_learning_modules;
-CREATE POLICY "Admin manage tax modules"
-ON public.tax_learning_modules
-FOR ALL
-TO authenticated
-USING (public.is_admin(auth.uid()))
-WITH CHECK (public.is_admin(auth.uid()));`;
 
 const emptyForm: CmsTaxModuleInput = {
   slug: '',
@@ -233,31 +186,7 @@ export default function AdminModulesPage() {
             </div>
           </header>
 
-          {error && (
-            <section className="space-y-4 rounded-3xl border border-red-500/30 bg-red-500/10 p-6">
-              <div>
-                <h2 className="text-lg font-black text-red-200">Tabel CMS belum siap</h2>
-                <p className="mt-2 text-sm leading-relaxed text-red-100/80">
-                  Jalankan migration SQL berikut di Supabase SQL Editor, lalu refresh halaman ini.
-                </p>
-              </div>
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(CMS_MIGRATION_SQL);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1600);
-                  }}
-                  className="absolute right-3 top-3 rounded-lg bg-red-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-red-500"
-                >
-                  {copied ? 'Tersalin' : 'Salin SQL'}
-                </button>
-                <pre className="max-h-96 overflow-auto rounded-2xl border border-red-500/20 bg-slate-950 p-5 text-xs leading-relaxed text-slate-300">
-                  {CMS_MIGRATION_SQL}
-                </pre>
-              </div>
-            </section>
-          )}
+
 
           <div className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
             <section className="rounded-3xl border border-slate-800 bg-slate-900/45 p-5 shadow-2xl">

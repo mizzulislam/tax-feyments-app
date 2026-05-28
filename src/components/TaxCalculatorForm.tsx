@@ -464,6 +464,7 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
   const [step, setStep] = useState(1);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [saveDialog, setSaveDialog] = useState<SaveDialog | null>(null);
+  const [formMode, setFormMode] = useState<'simple' | 'professional'>('simple');
 
   useEffect(() => {
     setStep(1);
@@ -1378,8 +1379,14 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
           {/* Header & Step Tracker */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator PPh 21</h2>
-              <p className="text-xs text-slate-400 mt-1">Isi penghasilan, pengurang, lalu lihat perhitungan PPh 21.</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Kalkulator PPh 21</h2>
+                <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800 self-start">
+                  <button onClick={() => { setFormMode('simple'); setJenisPemotongan('bulanan'); }} className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition ${formMode === 'simple' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Simple</button>
+                  <button onClick={() => setFormMode('professional')} className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition ${formMode === 'professional' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Professional</button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 mt-2 sm:mt-1">Isi penghasilan, pengurang, lalu lihat perhitungan PPh 21.</p>
             </div>
             {jenisPemotongan === 'tahunan' && (
               <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -1391,24 +1398,26 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
             )}
           </div>
 
-          {/* Jenis Pemotongan */}
-          <div className="space-y-1.5 mb-6">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
-              Jenis Pemotongan
-              <Tooltip content="Pilih jenis pemotongan PPh 21 yang sesuai dengan kebutuhan Anda." />
-            </label>
-            <ModernSelect
-              id="jenisPemotongan"
-              value={jenisPemotongan}
-              options={jenisPemotonganOptions}
-              open={openSelect === 'jenisPemotongan'}
-              onToggle={setOpenSelect}
-              onChange={(value) => {
-                setJenisPemotongan(value as JenisPemotongan);
-                setStep(1); // Reset step if changing type
-              }}
-            />
-          </div>
+          {/* Jenis Pemotongan - Only in Professional Mode */}
+          {formMode === 'professional' && (
+            <div className="space-y-1.5 mb-6">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                Jenis Pemotongan
+                <Tooltip content="Pilih jenis pemotongan PPh 21 yang sesuai dengan kebutuhan Anda." />
+              </label>
+              <ModernSelect
+                id="jenisPemotongan"
+                value={jenisPemotongan}
+                options={jenisPemotonganOptions}
+                open={openSelect === 'jenisPemotongan'}
+                onToggle={setOpenSelect}
+                onChange={(value) => {
+                  setJenisPemotongan(value as JenisPemotongan);
+                  setStep(1); // Reset step if changing type
+                }}
+              />
+            </div>
+          )}
 
           {/* TAHUNAN VIEW */}
           {jenisPemotongan === 'tahunan' && (
@@ -1728,14 +1737,16 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPh bulan</label>
                       <ModernSelect id="taxPeriod" value={taxPeriod} options={taxPeriodOptions} open={openSelect === 'taxPeriod'} onToggle={setOpenSelect} onChange={(value) => setTaxPeriod(value as TaxPeriod)} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
-                      <ModernSelect id="employmentStatus" value={employmentStatus} options={employmentStatusOptions} open={openSelect === 'employmentStatus'} onToggle={setOpenSelect} onChange={(value) => setEmploymentStatus(value as EmploymentStatus)} />
-                    </div>
+                    {formMode === 'professional' && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
+                        <ModernSelect id="employmentStatus" value={employmentStatus} options={employmentStatusOptions} open={openSelect === 'employmentStatus'} onToggle={setOpenSelect} onChange={(value) => setEmploymentStatus(value as EmploymentStatus)} />
+                      </div>
+                    )}
                     {taxPeriod === '12' && (
                       <div className="sm:col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4 flex gap-3 text-amber-200/90 text-xs sm:text-sm leading-relaxed items-start">
                         <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path></svg>
-                        <p>Penerapan TER tidak berlaku untuk bulan Desember. Agar lebih akurat, Anda bisa hitung pph bulan Desember <button type="button" onClick={() => { setJenisPemotongan('tahunan'); setStep(1); }} className="text-amber-400 font-semibold hover:underline decoration-amber-400/50 underline-offset-2">disini</button></p>
+                        <p>Penerapan TER tidak berlaku untuk bulan Desember. Agar lebih akurat, Anda bisa hitung pph bulan Desember <button type="button" onClick={() => { setFormMode('professional'); setJenisPemotongan('tahunan'); setStep(1); }} className="text-amber-400 font-semibold hover:underline decoration-amber-400/50 underline-offset-2">disini</button></p>
                       </div>
                     )}
                   </div>
@@ -1744,26 +1755,30 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status PTKP</label>
                       <ModernSelect id="ptkpStatus" value={ptkpStatus} options={ptkpOptions} open={openSelect === 'ptkpStatus'} onToggle={setOpenSelect} onChange={(value) => setPtkpStatus(value as PtkpStatus)} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema perhitungan</label>
-                      <SchemeRadioPicker
-                        value={calculationScheme}
-                        onChange={setCalculationScheme}
-                        options={[
-                          { value: 'gross', label: 'Gross', tooltip: 'PPh 21 dipotong dari penghasilan bruto yang Anda masukkan.' },
-                          { value: 'gross_up', label: 'Gross Up', tooltip: 'PPh 21 ditanggung sebagai tunjangan pajak, lalu ikut menambah dasar penghasilan bruto.' }
-                        ]}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tunjangan PPh</label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                        <input type="text" inputMode="numeric" value={formatNumberInput(tunjangan)} onChange={(e) => handleNumberInput(e.target.value, setTunjangan)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                    {formMode === 'professional' && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema perhitungan</label>
+                        <SchemeRadioPicker
+                          value={calculationScheme}
+                          onChange={setCalculationScheme}
+                          options={[
+                            { value: 'gross', label: 'Gross', tooltip: 'PPh 21 dipotong dari penghasilan bruto yang Anda masukkan.' },
+                            { value: 'gross_up', label: 'Gross Up', tooltip: 'PPh 21 ditanggung sebagai tunjangan pajak, lalu ikut menambah dasar penghasilan bruto.' }
+                          ]}
+                        />
                       </div>
-                    </div>
+                    )}
+                  </div>
+                  <div className={`grid gap-4 ${formMode === 'professional' ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+                    {formMode === 'professional' && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tunjangan PPh</label>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
+                          <input type="text" inputMode="numeric" value={formatNumberInput(tunjangan)} onChange={(e) => handleNumberInput(e.target.value, setTunjangan)} placeholder="0" className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono" />
+                        </div>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penghasilan bruto</label>
                       <div className="relative">

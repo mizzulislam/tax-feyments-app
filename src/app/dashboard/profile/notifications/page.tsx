@@ -5,43 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useAlert } from '@/contexts/AlertContext';
 
-const MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
 
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "User own notifications SELECT" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "User own notifications INSERT" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "User own notifications UPDATE" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "User own notifications DELETE" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
-
-ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS notification_type TEXT DEFAULT 'system' CHECK (notification_type IN ('system', 'deadline', 'status_change', 'document', 'ai_insight', 'achievement'));
-ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent'));
-ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS action_url TEXT;
-ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
-
-CREATE TABLE IF NOT EXISTS public.notification_preferences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-    email_notifications BOOLEAN DEFAULT true,
-    push_notifications BOOLEAN DEFAULT true,
-    deadline_reminder_days INT DEFAULT 3,
-    quiet_hours_start TIME DEFAULT '22:00',
-    quiet_hours_end TIME DEFAULT '07:00',
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
-ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "User own prefs SELECT" ON public.notification_preferences FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "User own prefs INSERT" ON public.notification_preferences FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "User own prefs UPDATE" ON public.notification_preferences FOR UPDATE USING (auth.uid() = user_id);
-`;
 
 export default function NotificationSettingsPage() {
   const { showAlert } = useAlert();
@@ -61,14 +25,7 @@ export default function NotificationSettingsPage() {
   const checkAndLoad = async () => {
     try {
       setCheckingTable(true);
-      const { error: testError } = await supabase.from('notification_preferences').select('id').limit(1);
-
-      if (testError) {
-        if (testError.message.includes("Could not find the table") || testError.code === 'P0001' || testError.code === '42P01') {
-          setIsTableMissing(true);
-          return;
-        }
-      }
+      setCheckingTable(true);
       setIsTableMissing(false);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -169,36 +126,6 @@ export default function NotificationSettingsPage() {
         <div className="py-20 text-center text-slate-500 font-medium">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-yellow-500 border-t-transparent mb-4"></div>
           <p className="text-sm">Membaca Konfigurasi...</p>
-        </div>
-      ) : isTableMissing ? (
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-red-500/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl">
-          <div className="flex items-center gap-3 text-red-450">
-            <svg className="w-6 h-6 flex-shrink-0 animate-pulse text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <h3 className="text-lg font-black text-white">Konfigurasi Tabel Diperlukan!</h3>
-          </div>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-slate-300 leading-relaxed font-medium">
-              Sistem Notifikasi Lanjutan membutuhkan modifikasi pada skema database. Salin script SQL berikut dan jalankan di SQL Editor Supabase:
-            </p>
-            <div className="relative">
-              <button
-                onClick={() => { navigator.clipboard.writeText(MIGRATION_SQL); const b = document.getElementById('copy-sql-notif'); if(b){b.textContent='✅ Tersalin!'; setTimeout(()=>{b.textContent='📋 Salin SQL'},2000);} }}
-                id="copy-sql-notif"
-                className="absolute top-3 right-3 z-10 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-bold rounded-lg transition-all shadow-lg uppercase tracking-wider"
-              >📋 Salin SQL</button>
-              <pre className="bg-slate-950/90 border border-slate-800 text-slate-300 text-xs p-5 rounded-2xl font-mono overflow-x-auto max-h-[250px] leading-relaxed shadow-inner font-semibold whitespace-pre">{MIGRATION_SQL}</pre>
-            </div>
-          </div>
-
-          <button
-            onClick={checkAndLoad}
-            className="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold rounded-xl uppercase tracking-wider transition-all shadow-lg"
-          >
-            Periksa Ulang Konfigurasi
-          </button>
         </div>
       ) : (
         <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-8 space-y-8">

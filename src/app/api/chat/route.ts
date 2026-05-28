@@ -21,9 +21,18 @@ const RISK_WORDS = [
   'sanksi', 
   'denda', 
   'palsu', 
-  'gelap', 
   'menghindari pajak'
 ];
+
+const MANDATORY_SAFETY_SYSTEM_PROMPT = `
+⚠️ PERINGATAN KEAMANAN MUTLAK (SANGAT KETAT) ⚠️
+Kamu DILARANG KERAS:
+1. Memberikan saran penggelapan pajak, penghindaran pajak ilegal (tax evasion), atau manipulasi data keuangan.
+2. Membantu menyembunyikan aset, mengubah nominal transaksi palsu, atau membuat faktur fiktif.
+3. Mengajarkan cara menyuap petugas pajak atau memalsukan dokumen SPT.
+4. Menjawab pertanyaan di luar konteks perpajakan, keuangan, atau fitur aplikasi "My Tax".
+Jika pengguna meminta hal-hal di atas, kamu WAJIB menolak dengan sopan dan mengingatkan mereka tentang risiko hukum yang berlaku di Indonesia.
+`;
 
 interface AiTaxContextPayload {
   currentYear?: number;
@@ -554,7 +563,9 @@ ID sesi chat aktif: ${sessionId || 'sesi sementara / belum disimpan'}
 - Tone suara Anda saat ini: ${tone.toUpperCase()}
   -> Aturan Tone: ${toneInstruction}
   
-Buatlah analogi spesifik yang mencocokkan dunia dari Persona tersebut dengan konsep perpajakan yang sedang dijelaskan!`;
+Buatlah analogi spesifik yang mencocokkan dunia dari Persona tersebut dengan konsep perpajakan yang sedang dijelaskan!
+
+${MANDATORY_SAFETY_SYSTEM_PROMPT}`;
 
   // Format history ke dalam prompt
   let formattedPrompt = '';

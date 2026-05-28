@@ -241,6 +241,23 @@ export function calculateMonthlyTerTax(grossMonthly: number, ptkpStatus: string)
   return Math.round(grossMonthly * rate);
 }
 
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+  suggestedMethod?: string;
+}
+
+export function validatePPh21TERContext(month: number): ValidationResult {
+  if (month === 12) {
+    return {
+      isValid: false,
+      error: 'Metode TER tidak berlaku untuk Masa Desember. Gunakan metode tahunan (Pasal 21 ayat 2 PMK-168/2023).',
+      suggestedMethod: 'annual'
+    };
+  }
+  return { isValid: true };
+}
+
 // --- PPh 21 Final ---
 export type Pph21FinalObject = 'pesangon' | 'pensiun' | 'honorarium_apbn';
 
@@ -417,19 +434,23 @@ export interface ConsolidatedTaxResult {
   totalGrossFinal: number;
   totalFinalTax: number;
   grandTotalTaxPayable: number;
+  warnings: string[];
 }
 
 /**
  * Menghitung Pajak Konsolidasi Tahunan dari berbagai sumber penghasilan
  * @param sources Daftar sumber penghasilan wajib pajak
  * @param ptkpStatus Status PTKP awal tahun (TK/0, K/1, dll)
+ * @param currentTaxYear Tahun pajak berjalan untuk pelacakan masa berlaku UMKM
  * @returns Rangkian hasil perhitungan pajak gabungan progresif dan final
  */
 export function calculateConsolidatedTax(
   sources: IncomeSource[],
-  ptkpStatus: string
+  ptkpStatus: string,
+  currentTaxYear: number = new Date().getFullYear()
 ): ConsolidatedTaxResult {
   const ptkpValue = PTKP_VALUES[normalizePtkpStatus(ptkpStatus)];
+  const warnings: string[] = [];
 
   let totalGrossProgressive = 0;
   let totalUsahaOmzet = 0;
@@ -437,6 +458,9 @@ export function calculateConsolidatedTax(
   let totalInvestasiOmzet = 0;
   let totalWithheldCredit = 0;
   let pekerjaanTetapGross = 0;
+
+  // Deteksi dini apakah wajib pajak memiliki penghasilan dari "Pekerjaan Bebas"
+  const hasPekerjaanBebas = sources.some(source => source.sourceType === 'pekerjaan_bebas');
 
   for (const source of sources) {
     if (['pekerjaan_tetap', 'pekerjaan_bebas', 'lainnya'].includes(source.sourceType)) {
@@ -448,7 +472,26 @@ export function calculateConsolidatedTax(
         totalWithheldCredit += source.withheldAmount || 0;
       }
     } else if (source.sourceType === 'usaha') {
-      totalUsahaOmzet += source.annualIncome;
+      // 1. Validasi Aturan Eksklusivitas (Pekerjaan Bebas vs PP 23)
+      if (hasPekerjaanBebas) {
+        // Omzet usaha dipaksa masuk ke tarif progresif dengan asusmsi Norma NPPN rata-rata 50%
+        const pendapatanNetoAsumsiNorma = source.annualIncome * 0.50;
+        totalGrossProgressive += pendapatanNetoAsumsiNorma;
+        warnings.push(
+          `Sumber '${source.sourceName}': Karena Anda memiliki Penghasilan Pekerjaan Bebas, omzet usaha dagang Anda tidak dapat dikenakan skema PPh Final 0.5%. Pendapatan ini telah dialihkan ke perhitungan tarif progresif dengan asumsi tarif NPPN 50%.`
+        );
+      } 
+      // 2. Validasi Kedaluwarsa Insentif PP 55/2022 (Batas 7 Tahun)
+      else if (source.registrationYearForUmkm && (currentTaxYear - source.registrationYearForUmkm > 7)) {
+        totalGrossProgressive += source.annualIncome; // Masuk ke progresif penuh tanpa tarif norma UMKM
+        warnings.push(
+          `Sumber '${source.sourceName}': Masa berlaku insentif PPh Final UMKM 0.5% Anda telah kedaluwarsa (Maksimal 7 Tahun sejak pendaftaran pertama). Omzet usaha dialihkan ke tarif progresif umum.`
+        );
+      } 
+      // Skema legal aman
+      else {
+        totalUsahaOmzet += source.annualIncome;
+      }
     } else if (source.sourceType === 'sewa') {
       totalSewaOmzet += source.annualIncome;
     } else if (source.sourceType === 'investasi') {
@@ -496,6 +539,7 @@ export function calculateConsolidatedTax(
     totalGrossFinal,
     totalFinalTax,
     grandTotalTaxPayable,
+    warnings,
   };
 }
 
@@ -726,20 +770,35 @@ export interface BphtbResult {
   taxableBase: number;
   rate: number;
   tax: number;
+  disclaimer: string | null;
 }
 
-export function calculateBphtb(transactionValue: number, njop: number, npoptkp = 80000000, rate = 0.05): BphtbResult {
+const BPHTB_RATES_BY_REGION: Record<string, number> = {
+  'DKI JAKARTA': 0.05,
+  'SURABAYA': 0.05,
+  'BANDUNG': 0.05,
+  'DEFAULT': 0.05, // fallback dengan disclaimer
+};
+
+export function calculateBphtb(transactionValue: number, njop: number, npoptkp = 80000000, region: string = 'DEFAULT'): BphtbResult {
   const npop = Math.max(Math.max(0, transactionValue), Math.max(0, njop));
   const safeNpoptkp = Math.max(0, npoptkp);
-  const safeRate = Math.min(Math.max(rate, 0), 1);
+  
+  const regionKey = region.toUpperCase();
+  const rate = BPHTB_RATES_BY_REGION[regionKey] ?? BPHTB_RATES_BY_REGION['DEFAULT'];
+  const isDefaultRate = !BPHTB_RATES_BY_REGION[regionKey];
+  
   const taxableBase = Math.max(0, npop - safeNpoptkp);
 
   return {
     npop,
     npoptkp: safeNpoptkp,
     taxableBase,
-    rate: safeRate,
-    tax: Math.round(taxableBase * safeRate),
+    rate,
+    tax: Math.round(taxableBase * rate),
+    disclaimer: isDefaultRate 
+      ? `Tarif 5% digunakan sebagai estimasi. Tarif BPHTB untuk ${region} dapat berbeda berdasarkan Perda setempat. Verifikasi ke BPRD/BPKD daerah Anda.`
+      : null
   };
 }
 

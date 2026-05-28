@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TaxpayerProfile } from '@/types/taxpayer';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
+import { encrypt } from '@/lib/encryption';
 
 export function useMutateProfile() {
   const queryClient = useQueryClient();
@@ -19,8 +20,10 @@ export function useMutateProfile() {
           id: user.id,
           full_name: profileData.fullName,
           taxpayer_type: profileData.taxpayerType,
-          nik: profileData.nik,
-          npwp: profileData.npwp,
+          nik: '',
+          npwp: '',
+          nik_encrypted: encrypt(profileData.nik),
+          npwp_encrypted: encrypt(profileData.npwp),
           phone_number: profileData.phoneNumber,
           username: profileData.username || null,
           avatar_url: profileData.avatarUrl || null,
@@ -57,8 +60,10 @@ export function useMutateProfile() {
             id: user.id,
             full_name: profileData.fullName,
             taxpayer_type: profileData.taxpayerType,
-            nik: profileData.nik,
-            npwp: profileData.npwp,
+            nik: '',
+            npwp: '',
+            nik_encrypted: encrypt(profileData.nik),
+            npwp_encrypted: encrypt(profileData.npwp),
             phone_number: profileData.phoneNumber,
           })
           .select()
@@ -74,10 +79,10 @@ export function useMutateProfile() {
     onSuccess: (data) => {
       // Sinkronisasi data ke Zustand store global secara real-time
       setProfile({
-        fullName: data.full_name,
-        taxpayerType: data.taxpayer_type as 'pribadi' | 'badan',
-        nik: data.nik,
-        npwp: data.npwp,
+        fullName: profileData.fullName,
+        taxpayerType: profileData.taxpayerType,
+        nik: profileData.nik,
+        npwp: profileData.npwp,
         phoneNumber: data.phone_number,
         username: data.username,
         avatarUrl: data.avatar_url,

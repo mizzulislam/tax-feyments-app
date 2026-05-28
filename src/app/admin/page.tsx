@@ -13,89 +13,7 @@ import {
 } from '@/hooks/admin/useAdminApi';
 import { AdminUser, UserRole } from '@/types/taxpayer';
 
-const AUDIT_MIGRATION_SQL = `-- Fase 7: Admin Panel & Audit Trail
-ALTER TABLE public.profiles
-ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'
-CHECK (role IN ('user', 'consultant', 'admin'));
 
-CREATE TABLE IF NOT EXISTS public.audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    actor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-    actor_email TEXT,
-    action TEXT NOT NULL,
-    target_table TEXT,
-    target_id UUID,
-    details JSONB DEFAULT '{}',
-    ip_address INET,
-    user_agent TEXT,
-    severity TEXT DEFAULT 'info' CHECK (severity IN ('info', 'warning', 'error', 'critical')),
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON public.audit_logs(action);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_severity ON public.audit_logs(severity);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_email ON public.audit_logs(actor_email);
-
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE OR REPLACE FUNCTION public.is_admin(check_user_id UUID)
-RETURNS BOOLEAN AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE id = check_user_id AND role = 'admin'
-    );
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
-
-DROP POLICY IF EXISTS "Admin only audit SELECT" ON public.audit_logs;
-CREATE POLICY "Admin only audit SELECT" ON public.audit_logs FOR SELECT USING (
-    public.is_admin(auth.uid())
-);
-
-DROP POLICY IF EXISTS "System insert audit" ON public.audit_logs;
-CREATE POLICY "System insert audit" ON public.audit_logs FOR INSERT WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Admin can read all profiles" ON public.profiles;
-CREATE POLICY "Admin can read all profiles" ON public.profiles FOR SELECT USING (
-    public.is_admin(auth.uid())
-);
-
-DROP POLICY IF EXISTS "Admin can update user roles" ON public.profiles;
-CREATE POLICY "Admin can update user roles" ON public.profiles FOR UPDATE USING (
-    public.is_admin(auth.uid())
-) WITH CHECK (
-    public.is_admin(auth.uid())
-);
-
-CREATE OR REPLACE FUNCTION public.log_audit_event()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO public.audit_logs (actor_id, action, target_table, target_id, details)
-    VALUES (
-        auth.uid(),
-        TG_OP,
-        TG_TABLE_NAME,
-        COALESCE(NEW.id, OLD.id),
-        jsonb_build_object(
-            'old', CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
-            'new', CASE WHEN TG_OP != 'DELETE' THEN row_to_json(NEW) ELSE NULL END
-        )
-    );
-    RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS audit_profiles ON public.profiles;
-CREATE TRIGGER audit_profiles AFTER INSERT OR UPDATE OR DELETE ON public.profiles
-    FOR EACH ROW EXECUTE FUNCTION public.log_audit_event();
-
-DROP TRIGGER IF EXISTS audit_tax_reports ON public.tax_reports;
-CREATE TRIGGER audit_tax_reports AFTER INSERT OR UPDATE OR DELETE ON public.tax_reports
-    FOR EACH ROW EXECUTE FUNCTION public.log_audit_event();
-
-DROP TRIGGER IF EXISTS audit_transactions ON public.transactions;
-CREATE TRIGGER audit_transactions AFTER INSERT OR UPDATE OR DELETE ON public.transactions
-    FOR EACH ROW EXECUTE FUNCTION public.log_audit_event();`;
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -130,31 +48,14 @@ function formatDate(value?: string | null) {
 }
 
 function ErrorPanel({ message }: { message: string }) {
-  const [copied, setCopied] = useState(false);
-
   return (
     <div className="bg-slate-900/70 border border-red-500/30 rounded-2xl p-6 space-y-5">
       <div>
         <h3 className="text-lg font-black text-white">Konfigurasi Admin Perlu Dilengkapi</h3>
         <p className="text-sm text-slate-300 mt-2 leading-relaxed">{message}</p>
       </div>
-      <div className="relative">
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(AUDIT_MIGRATION_SQL);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1800);
-          }}
-          className="absolute top-3 right-3 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider"
-        >
-          {copied ? 'Tersalin' : 'Salin SQL'}
-        </button>
-        <pre className="max-h-[360px] overflow-auto whitespace-pre bg-slate-950 border border-slate-800 rounded-xl p-4 text-[11px] leading-relaxed text-slate-300">
-          {AUDIT_MIGRATION_SQL}
-        </pre>
-      </div>
       <p className="text-xs text-slate-500">
-        Setelah migrasi, tambahkan `SUPABASE_SERVICE_ROLE_KEY` pada environment server agar endpoint admin bisa membaca data lintas user tanpa membuka RLS ke client.
+        Pastikan konfigurasi lingkungan Supabase sudah sesuai dan akses database tersedia.
       </p>
     </div>
   );

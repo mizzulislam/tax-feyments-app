@@ -8,10 +8,11 @@ import ChatQuiz from '@/components/ChatQuiz';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useFetchChatSessions, useCreateChatSession } from '@/hooks/useChatSessions';
-import { useFetchChatMessages, useCreateChatMessage } from '@/hooks/useChatMessages';
+import { useCreateChatMessage, useFetchChatMessages } from '@/hooks/useChatMessages';
 import { useAiTaxContext } from '@/hooks/useAiTaxContext';
 import { supabase } from '@/lib/supabase';
 import { useAlert } from '@/contexts/AlertContext';
+import AIResponseWrapper from '@/components/AIResponseWrapper';
 
 export default function TaxAssistantChat() {
   const router = useRouter();
@@ -185,6 +186,7 @@ export default function TaxAssistantChat() {
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 rounded-tl-sm'}`}>
                   {msg.role === 'ai' ? (
                     <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7] prose-pre:p-0 prose-pre:m-0 prose-pre:bg-transparent">
+                      <AIResponseWrapper isHighRisk={(msg as any).metadata?.isHighRisk}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -309,6 +311,7 @@ export default function TaxAssistantChat() {
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      </AIResponseWrapper>
                     </div>
                   ) : (
                     msg.content
@@ -321,6 +324,7 @@ export default function TaxAssistantChat() {
               <div className="flex justify-start">
                 <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-md bg-slate-800 text-slate-200 rounded-tl-sm">
                   <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7] prose-pre:p-0 prose-pre:m-0 prose-pre:bg-transparent">
+                    <AIResponseWrapper>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -445,6 +449,7 @@ export default function TaxAssistantChat() {
                     >
                       {tempMessage}
                     </ReactMarkdown>
+                    </AIResponseWrapper>
                   </div>
                 </div>
               </div>

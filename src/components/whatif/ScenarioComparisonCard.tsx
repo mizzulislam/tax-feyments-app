@@ -32,8 +32,11 @@ export default function ScenarioComparisonCard({
       <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[100px] opacity-20 pointer-events-none transition-colors duration-1000 ${isSaving ? 'bg-emerald-500' : isLosing ? 'bg-red-500' : 'bg-blue-500'}`}></div>
 
       <div>
-        <h3 className="text-xl font-bold text-white tracking-tight">Hasil Simulasi (Real-Time)</h3>
-        <p className="text-sm text-slate-400 mt-1">Perbandingan antara kondisi saat ini dan skenario baru.</p>
+        <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          Tax Optimization Advisor
+        </h3>
+        <p className="text-sm text-slate-400 mt-1">Perbandingan skenario pajak dan rekomendasi efisiensi secara real-time.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -85,9 +88,14 @@ export default function ScenarioComparisonCard({
       {isSaving && (
         <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex gap-3">
           <svg className="w-6 h-6 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <div>
-            <p className="text-sm font-bold text-emerald-400">Skenario Optimal!</p>
-            <p className="text-xs text-emerald-400/80 mt-1 leading-relaxed">Skenario ini dapat memberikan penghematan pajak. Pertimbangkan untuk menerapkan perencanaan ini pada tahun berjalan.</p>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-emerald-400">Peluang Efisiensi Ditemukan!</p>
+            <p className="text-xs text-emerald-400/80 mt-1 leading-relaxed">Skenario ini lebih efisien secara fiskal. Rekomendasi aksi:</p>
+            <ul className="mt-2 text-[11px] text-emerald-400/70 list-disc pl-4 space-y-1">
+              <li>Konsultasikan perubahan struktur gaji/benefit dengan HR.</li>
+              <li>Simpan perhitungan ini sebagai referensi perencanaan tahun depan.</li>
+              <li>Pastikan seluruh tunjangan memenuhi syarat bebas pajak (Natura/Kenikmatan).</li>
+            </ul>
           </div>
         </div>
       )}
@@ -95,9 +103,14 @@ export default function ScenarioComparisonCard({
       {isLosing && (
         <div className="mt-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex gap-3">
           <svg className="w-6 h-6 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-          <div>
-            <p className="text-sm font-bold text-orange-400">Pajak Meningkat</p>
-            <p className="text-xs text-orange-400/80 mt-1 leading-relaxed">Skenario ini akan meningkatkan beban pajak Anda. Anda bisa berkonsultasi dengan Tax Feyments untuk mencari alternatif lain.</p>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-orange-400">Peringatan: Beban Pajak Meningkat</p>
+            <p className="text-xs text-orange-400/80 mt-1 leading-relaxed">Skenario ini akan meningkatkan liabilitas pajak Anda. Pertimbangan:</p>
+            <ul className="mt-2 text-[11px] text-orange-400/70 list-disc pl-4 space-y-1">
+              <li>Tinjau kembali pemotongan PTKP atau skema tunjangan (Gross vs Gross-up).</li>
+              <li>Manfaatkan fasilitas PPh yang tersedia sesuai regulasi terbaru.</li>
+              <li>Konsultasikan dengan konsultan pajak melalui menu AI Assistant.</li>
+            </ul>
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ import { taxpayerProfileSchema, TaxpayerProfile } from '@/types/taxpayer';
 import { useMutateProfile } from '@/hooks/useMutateProfile';
 import { supabase } from '@/lib/supabase';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
+import { decrypt } from '@/lib/encryption';
 
 type SettingsSection = 'profil' | 'data-pribadi' | 'akun' | 'academy' | 'notifikasi';
 
@@ -492,11 +493,22 @@ export default function ProfileSettingsPage() {
 
         if (data) {
           const loadedBirthDate = data.birth_date || '';
+          
+          let nikDecrypted = data.nik || '';
+          if (data.nik_encrypted) {
+            nikDecrypted = decrypt(data.nik_encrypted) || nikDecrypted;
+          }
+          
+          let npwpDecrypted = data.npwp || '';
+          if (data.npwp_encrypted) {
+            npwpDecrypted = decrypt(data.npwp_encrypted) || npwpDecrypted;
+          }
+
           const profileData: TaxpayerProfile = {
             fullName: data.full_name || '',
             taxpayerType: (data.taxpayer_type as 'pribadi' | 'badan') || 'pribadi',
-            nik: data.nik || '',
-            npwp: data.npwp || '',
+            nik: nikDecrypted,
+            npwp: npwpDecrypted,
             phoneNumber: data.phone_number || '',
             username: data.username || '',
             avatarUrl: data.avatar_url || '',

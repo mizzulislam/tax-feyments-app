@@ -125,8 +125,14 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
         } else if (apiResult) {
           setResult(apiResult);
           setEditForm(apiResult);
-          if (onScanComplete) {
-            onScanComplete(apiResult);
+          // Force manual verification
+          setIsEditing(true);
+          
+          const isAmbiguous = apiResult.nominal === 0 || apiResult.vendor === 'Tidak diketahui';
+          if (isAmbiguous) {
+            showAlert('Perhatian', 'Beberapa data gagal diekstrak dengan sempurna. Mohon lengkapi secara manual.', 'warning');
+          } else {
+            showAlert('Verifikasi Manual', 'Mohon periksa kembali hasil ekstraksi OCR sebelum menerapkannya.', 'info');
           }
         }
       }, 500); // small delay to show 100%
@@ -265,11 +271,19 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
               </>
             ) : (
               <form onSubmit={handleApplyEdit} className="w-full">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold text-white">Detail Ekstraksi Dokumen</h4>
-                  <button type="button" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-white">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
+                <div className="flex flex-col mb-4 border-b border-slate-800 pb-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                      Verifikasi Manual (Wajib)
+                    </h4>
+                    <button type="button" onClick={() => { setIsEditing(false); setResult(null); setFileName(null); }} className="text-slate-400 hover:text-white">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 text-left">
+                    Sistem OCR mungkin tidak 100% akurat. Harap tinjau dan perbaiki data di bawah ini jika terdapat kesalahan.
+                  </p>
                 </div>
 
                 <div className="space-y-3 mb-5 text-left">
@@ -317,12 +331,14 @@ export default function OcrUploader({ onScanComplete }: OcrUploaderProps) {
                   <button 
                     type="button"
                     onClick={() => {
-                      setEditForm(result); // reset to original
+                      setEditForm(null);
+                      setResult(null);
+                      setFileName(null);
                       setIsEditing(false);
                     }}
                     className="px-4 py-2 text-xs font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
                   >
-                    Batal
+                    Batal Pindai
                   </button>
                   <button 
                     type="submit"

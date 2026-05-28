@@ -1,22 +1,35 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useGamification, useUpdateStreak } from '@/hooks/useGamification';
 
 export default function StreakCounter() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [canHoverPointer, setCanHoverPointer] = useState(true);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for streak
-  const currentStreak = 1;
-  const longestStreak = 2;
-  const days = [
-    { name: 'Rab', active: false },
-    { name: 'Kam', active: false },
-    { name: 'Jum', active: false },
-    { name: 'Sab', active: false },
-    { name: 'Min', active: true },
-  ];
+  const { data: gamification } = useGamification();
+  const updateStreak = useUpdateStreak();
+
+  const currentStreak = gamification?.current_streak || 0;
+  const longestStreak = gamification?.max_streak || 0;
+
+  // Render days array based on today
+  const todayIndex = new Date().getDay(); // 0 is Sunday, 1 is Monday...
+  const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const days = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (4 - i));
+    const isToday = i === 4;
+    return { name: dayNames[d.getDay()], active: isToday && currentStreak > 0 };
+  });
+
+  useEffect(() => {
+    // Attempt check-in once when the component mounts
+    if (updateStreak.isIdle) {
+      updateStreak.mutate();
+    }
+  }, [updateStreak]);
 
   useEffect(() => {
     const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');

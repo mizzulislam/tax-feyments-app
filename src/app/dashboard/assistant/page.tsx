@@ -10,59 +10,9 @@ import { useFetchChatMessages, useCreateChatMessage } from '@/hooks/useChatMessa
 import { useAiTaxContext } from '@/hooks/useAiTaxContext';
 import { supabase } from '@/lib/supabase';
 import { useAlert } from '@/contexts/AlertContext';
+import AIResponseWrapper from '@/components/AIResponseWrapper';
 
-const MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS public.chat_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT DEFAULT 'Percakapan Baru',
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
 
-ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "User own sessions" ON public.chat_sessions FOR ALL USING (auth.uid() = user_id);
-
-CREATE TABLE IF NOT EXISTS public.chat_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL REFERENCES public.chat_sessions(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('user', 'ai', 'system')),
-    content TEXT NOT NULL,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "User own messages via session" ON public.chat_messages FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.chat_sessions WHERE id = session_id AND user_id = auth.uid())
-);
-
-CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON public.chat_messages(session_id, created_at);
-`;
-
-function ChatMigrationNotice() {
-  return (
-    <div className="max-w-3xl mx-auto mt-12 rounded-3xl border border-blue-500/20 bg-slate-900/70 p-6 shadow-2xl">
-      <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16M4 12h16M4 17h10" />
-          </svg>
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-black text-white">Migrasi chat Fase 6 belum dijalankan</h3>
-          <p className="mt-2 text-xs leading-relaxed text-slate-400">
-            Supabase belum menemukan tabel <span className="font-bold text-blue-300">chat_sessions</span> dan <span className="font-bold text-blue-300">chat_messages</span>.
-            Jalankan SQL berikut di Supabase SQL Editor agar riwayat chat persisten aktif.
-          </p>
-          <pre className="mt-4 max-h-64 overflow-auto rounded-2xl border border-slate-800 bg-slate-950 p-4 text-[10px] leading-relaxed text-slate-300">
-            {MIGRATION_SQL}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Lists of available Personas and Tones
 const PERSONA_LIST: Record<string, { name: string; emoji: string; desc: string }> = {
@@ -1033,6 +983,7 @@ export default function AssistantPage() {
                 }`}>
                   {msg.role === 'ai' ? (
                     <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7] prose-pre:p-0 prose-pre:m-0 prose-pre:bg-transparent">
+                      <AIResponseWrapper isHighRisk={(msg as any).metadata?.isHighRisk}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -1157,6 +1108,7 @@ export default function AssistantPage() {
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      </AIResponseWrapper>
                     </div>
                   ) : (
                     <p className="text-[13px] md:text-[14px] leading-[1.7] whitespace-pre-wrap">{msg.content}</p>
@@ -1184,7 +1136,9 @@ export default function AssistantPage() {
             <div className="flex flex-col items-start animate-in fade-in duration-200">
               <div className="max-w-[90%] sm:max-w-[85%] md:max-w-[78%] rounded-3xl px-5 py-4 text-xs md:text-sm shadow-xl leading-relaxed bg-slate-900/80 backdrop-blur-md border border-slate-800 text-slate-200 rounded-tl-sm">
                 <div className="prose prose-invert prose-xs md:prose-sm max-w-none prose-p:leading-[1.7]">
+                  <AIResponseWrapper>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{tempMessage}</ReactMarkdown>
+                  </AIResponseWrapper>
                 </div>
               </div>
             </div>
