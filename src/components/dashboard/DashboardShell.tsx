@@ -114,9 +114,13 @@ export default function DashboardShell({ children, userEmail, userName, userHand
   useEffect(() => {
     const loadProfileIfNeeded = async () => {
       if (storeProfile || isDemoMode) return;
+      useTaxpayerStore.getState().setIsLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          useTaxpayerStore.getState().setIsLoading(false);
+          return;
+        }
         
         const { data: profile } = await supabase
           .from('profiles')
@@ -164,9 +168,13 @@ export default function DashboardShell({ children, userEmail, userName, userHand
             hobbies: profile.hobbies || '',
             role: profile.role || 'user',
           });
+          useTaxpayerStore.getState().setIsLoading(false);
+        } else {
+          useTaxpayerStore.getState().setIsLoading(false);
         }
       } catch (err) {
         console.error('Failed to auto-load profile in shell:', err);
+        useTaxpayerStore.getState().setIsLoading(false);
       }
     };
     loadProfileIfNeeded();

@@ -23,7 +23,7 @@ export function useFetchAssets(taxYear?: number) {
     queryFn: async () => {
       const demoState = useDemoStore.getState();
       if (demoState.isDemoMode) {
-        return taxYear ? demoState.demoAssets.filter(a => a.taxYear === taxYear) : demoState.demoAssets;
+        return (taxYear ? demoState.demoAssets.filter(a => a.taxYear === taxYear) : demoState.demoAssets) as Asset[];
       }
 
       const { data: { user } } = await supabase.auth.getUser();

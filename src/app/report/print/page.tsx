@@ -11,6 +11,7 @@ import { useFetchChatSessions } from '@/hooks/useChatSessions';
 import { useFetchChatMessages } from '@/hooks/useChatMessages';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { IncomeSource, TaxDocument, Asset } from '@/types/taxpayer';
 
 export default function PrintReportPage() {
   const [mounted, setMounted] = useState(false);
@@ -19,9 +20,14 @@ export default function PrintReportPage() {
   
   const profile = useTaxpayerStore((state) => state.profile);
   const { data: reports } = useFetchReports();
-  const { data: incomeSources } = useFetchIncomeSources(taxYear);
-  const { data: documents } = useFetchDocuments(undefined, taxYear);
-  const { data: assets } = useFetchAssets(taxYear);
+  const { data: _incomeSources } = useFetchIncomeSources(taxYear);
+  const incomeSources = _incomeSources as IncomeSource[] | undefined;
+  
+  const { data: _documents } = useFetchDocuments(undefined, taxYear);
+  const documents = _documents as TaxDocument[] | undefined;
+  
+  const { data: _assets } = useFetchAssets(taxYear);
+  const assets = _assets as Asset[] | undefined;
   const { data: chatSessions } = useFetchChatSessions();
   const latestSessionId = chatSessions?.[0]?.id || null;
   const { data: chatMessages } = useFetchChatMessages(latestSessionId);
@@ -106,7 +112,7 @@ export default function PrintReportPage() {
 
   if (!mounted) return null;
 
-  let readiness: any;
+  let readiness: ReturnType<typeof calculateReadiness>;
   if (isDemoMode) {
     readiness = calculateReadiness({ 
       profile: demoProfile || profile, 

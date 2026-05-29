@@ -2,10 +2,12 @@ import { TaxReportData } from '@/hooks/useFetchReports';
 import { useFetchIncomeSources } from '@/hooks/useIncomeSources';
 import { useDemoStore } from '@/store/useDemoStore';
 import Link from 'next/link';
+import { IncomeSource } from '@/types/taxpayer';
 
 export default function DashboardStats({ data }: { data: TaxReportData[] }) {
-  const { data: incomeSources } = useFetchIncomeSources();
-  const { isDemoMode, demoIncomeGaji, demoIncomeFreelance } = useDemoStore();
+  const { data: _incomeSources } = useFetchIncomeSources();
+  const incomeSources = _incomeSources as IncomeSource[] | undefined;
+  const { isDemoMode } = useDemoStore();
 
   const totalDraftPayable = isDemoMode 
     ? 2450000 
@@ -16,7 +18,7 @@ export default function DashboardStats({ data }: { data: TaxReportData[] }) {
 
   // Kalkulasi dari sumber penghasilan multi
   const totalCombinedIncome = isDemoMode 
-    ? (demoIncomeGaji + demoIncomeFreelance)
+    ? 150000000 // Mock value for demo
     : (incomeSources || []).reduce((sum, item) => sum + item.annualIncome, 0);
     
   const totalWithheldTax = isDemoMode 

@@ -48,7 +48,7 @@ export default function DocumentCard({ document, onPreview }: DocumentCardProps)
   };
 
   const handleDelete = async () => {
-    if (await showConfirm('Hapus Dokumen', `Apakah Anda yakin ingin menghapus dokumen "${document.fileName}"?`, 'Ya, Hapus', 'Batal')) {
+    if (await showConfirm('Hapus Dokumen', `Apakah Anda yakin ingin menghapus dokumen "${document.fileName}"?`, 'Ya, Hapus', 'Batal', 'error')) {
       deleteDoc(document);
     }
   };

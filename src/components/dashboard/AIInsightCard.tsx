@@ -5,10 +5,10 @@ import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 import { ReadinessResult } from '@/lib/readinessEngine';
 
 export default function AIInsightCard({ score, missingItems }: { score?: number, missingItems?: string[] }) {
-  const { isDemoMode, persona, demoScore, demoMissingItems } = useDemoStore();
+  const { isDemoMode, persona } = useDemoStore();
   
-  const currentScore = isDemoMode ? demoScore : (score || 0);
-  const currentMissing = isDemoMode ? demoMissingItems : (missingItems || []);
+  const currentScore = score || 0;
+  const currentMissing = missingItems || [];
 
   let insightMessage = '';
   

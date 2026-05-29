@@ -46,12 +46,13 @@ const TYPE_LABELS: Record<string, { label: string; badge: string }> = {
 };
 
 export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
-  const { data: assets = [], isLoading, isError, error } = useFetchAssets(taxYear);
+  const { data: _assets = [], isLoading, isError, error } = useFetchAssets(taxYear);
+  const assets = _assets as Asset[];
   const deleteMutation = useDeleteAsset();
   const { showAlert, showConfirm } = useAlert();
 
   const handleDelete = async (id: string, name: string) => {
-    if (await showConfirm('Hapus Aset', `Apakah Anda yakin ingin menghapus aset "${name}"?`, 'Ya, Hapus', 'Batal')) {
+    if (await showConfirm('Hapus Aset', `Apakah Anda yakin ingin menghapus aset "${name}"?`, 'Ya, Hapus', 'Batal', 'error')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err: unknown) {
@@ -107,8 +108,14 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
               </tr>
             ) : assets.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
-                  Belum ada harta/aset yang tercatat untuk tahun pajak {taxYear}.
+                <td colSpan={7} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500 mb-2 shadow-inner border border-slate-700/50">
+                      <svg className="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    </div>
+                    <p className="text-slate-300 font-bold text-sm">Belum Ada Data Harta/Aset</p>
+                    <p className="text-slate-500 font-medium text-xs max-w-xs leading-relaxed">Daftar kekayaan Anda untuk tahun pajak {taxYear} akan tampil di sini setelah Anda menambahkannya.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -197,8 +204,12 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
             Gagal memuat data: {error?.message}
           </div>
         ) : assets.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 font-medium text-xs leading-relaxed">
-            Belum ada harta/aset yang tercatat untuk tahun pajak {taxYear}.
+          <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500 mb-1 shadow-inner border border-slate-700/50">
+              <svg className="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </div>
+            <p className="text-slate-300 font-bold text-xs">Belum Ada Harta/Aset</p>
+            <p className="text-slate-500 font-medium text-[10px] max-w-[200px] leading-relaxed">Daftar kekayaan Anda untuk tahun pajak {taxYear} akan tampil di sini.</p>
           </div>
         ) : (
           assets.map((a) => (

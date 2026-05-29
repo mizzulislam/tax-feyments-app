@@ -378,6 +378,7 @@ interface TaxCalculatorFormProps {
 }
 
 export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormProps) {
+  const handleSave = (status: string) => alert('Penyimpanan dari kalkulator belum diimplementasi');
   const [step, setStep] = useState(1);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
 

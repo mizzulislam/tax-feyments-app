@@ -27,7 +27,7 @@ export function useFetchDocuments(category?: string, taxYear?: number) {
         let docs = demoState.demoDocuments;
         if (category) docs = docs.filter(d => d.category === category);
         if (taxYear) docs = docs.filter(d => d.taxYear === taxYear);
-        return docs;
+        return docs as TaxDocument[];
       }
       
       const { data: { user } } = await supabase.auth.getUser();

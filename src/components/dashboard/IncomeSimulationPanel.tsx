@@ -4,6 +4,7 @@ import { useTaxpayerStore } from '@/store/useTaxpayerStore';
 import { useMutateReport } from '@/hooks/useMutateReport';
 import { calculateProgressiveTax, PTKP_VALUES, normalizePtkpStatus, calculatePph21TidakFinal, calculateCorporateIncomeTax } from '@/lib/taxEngine';
 import { useFetchIncomeSources } from '@/hooks/useIncomeSources';
+import { IncomeSource } from '@/types/taxpayer';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAlert } from '@/contexts/AlertContext';
@@ -19,7 +20,8 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 export default function IncomeSimulationPanel({ taxYear }: IncomeSimulationPanelProps) {
-  const { data: sources = [] } = useFetchIncomeSources(taxYear);
+  const { data: _sources = [] } = useFetchIncomeSources(taxYear);
+  const sources = _sources as IncomeSource[];
   const { profile } = useTaxpayerStore();
   const { showAlert } = useAlert();
   
@@ -61,7 +63,7 @@ export default function IncomeSimulationPanel({ taxYear }: IncomeSimulationPanel
       else if (s.sourceType === 'pekerjaan_bebas') {
         // NPPN Assumption 50% for Freelancers if Category allows 50%
         const cat = s.metadata?.tidakFinalCategory as any || '21-100-07';
-        const hasNpwp = s.metadata?.tidakFinalHasNpwp ?? true;
+        const hasNpwp = Boolean(s.metadata?.tidakFinalHasNpwp ?? true);
         const result = calculatePph21TidakFinal(s.annualIncome, cat, hasNpwp);
         progressiveGross += result.dpp;
       } 
@@ -69,7 +71,7 @@ export default function IncomeSimulationPanel({ taxYear }: IncomeSimulationPanel
         const corpMode = s.metadata?.corporateTaxMode || 'general';
         if (corpMode !== 'umkm_final' && corpMode !== 'umkm_individual') {
           // PPh Badan Normal
-          const corpTax = calculateCorporateIncomeTax(s.annualIncome, s.annualIncome, true, corpMode).taxDue;
+          const corpTax = calculateCorporateIncomeTax(s.annualIncome, s.annualIncome, true, corpMode as any).tax;
           totalPphBadan += corpTax;
           warnings.push(`Usaha '${s.sourceName}': Menggunakan tarif PPh Badan (${corpMode}).`);
         } else if (hasPekerjaanBebas) {
@@ -137,7 +139,7 @@ export default function IncomeSimulationPanel({ taxYear }: IncomeSimulationPanel
       taxYear,
       taxPeriod: '12',
       grossIncome: analysis.progressiveGross + analysis.totalUmkmOmzet,
-      ptkpStatus,
+      ptkpStatus: ptkpStatus as any,
       pensionContribution: 0,
       status,
     }, {

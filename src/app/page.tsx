@@ -128,10 +128,18 @@ export default function Home() {
           <Link href="/dashboard" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
             Masuk
           </Link>
-          <Link href="/onboarding" className="relative px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-full transition-all hover:scale-105 active:scale-95 group">
+          <button 
+            onClick={() => {
+              localStorage.removeItem('myTax_tour_completed');
+              document.cookie = "demo_mode=true; path=/; max-age=86400";
+              loadDemoData('Karyawan + Freelancer');
+              router.push('/dashboard');
+            }}
+            className="relative px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-full transition-all hover:scale-105 active:scale-95 group"
+          >
             <span className="absolute inset-0 rounded-full border border-blue-400/80 shadow-[0_0_15px_rgba(96,165,250,0.6)] animate-pulse pointer-events-none group-hover:shadow-[0_0_25px_rgba(96,165,250,0.8)]"></span>
-            <span className="relative z-10">Mulai Checkup</span>
-          </Link>
+            <span className="relative z-10">Tur Aplikasi</span>
+          </button>
         </div>
       </nav>
 
@@ -149,27 +157,21 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-12 duration-700 delay-300">
-          <Link href="/onboarding" className="relative w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-base font-bold rounded-2xl transition-all transform hover:-translate-y-1 hover:scale-[1.02] group">
+          <button 
+            onClick={() => {
+              // Hapus status tour agar tour berjalan
+              localStorage.removeItem('myTax_tour_completed');
+              // Aktifkan mode demo
+              document.cookie = "demo_mode=true; path=/; max-age=86400";
+              loadDemoData('Karyawan + Freelancer');
+              // Arahkan ke dashboard
+              router.push('/dashboard');
+            }}
+            className="relative w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-base font-bold rounded-2xl transition-all transform hover:-translate-y-1 hover:scale-[1.02] group"
+          >
             <span className="absolute inset-0 rounded-2xl border border-blue-400/80 shadow-[0_0_15px_rgba(96,165,250,0.6)] animate-pulse pointer-events-none group-hover:shadow-[0_0_25px_rgba(96,165,250,0.8)]"></span>
-            <span className="relative z-10">Mulai Tax Checkup</span>
-          </Link>
-          <div className="relative group/demobtn w-full sm:w-auto">
-            <button 
-              onClick={() => {
-                document.cookie = "demo_mode=true; path=/; max-age=86400"; // 1 day
-                loadDemoData('Karyawan + Freelancer');
-                router.push('/dashboard');
-              }}
-              className="w-full sm:w-auto px-6 py-3 bg-slate-900/80 backdrop-blur-md border border-slate-700 hover:border-slate-500 hover:bg-slate-800 text-white text-base font-bold rounded-2xl transition-all shadow-lg transform hover:-translate-y-1 hover:scale-[1.02]"
-            >
-              Coba Data Demo
-            </button>
-
-            {/* Tooltip */}
-            <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-3 -translate-x-1/2 whitespace-normal w-60 rounded-2xl bg-slate-800/95 backdrop-blur-xl border border-slate-600 px-4 py-3 text-xs font-medium text-slate-200 opacity-0 shadow-2xl transition-all duration-300 group-hover/demobtn:opacity-100 group-hover/demobtn:translate-y-1 text-center">
-              Lihat simulasi fitur secara instan menggunakan data pajak <strong>dummy</strong> tanpa perlu registrasi atau mengisi data asli.
-            </div>
-          </div>
+            <span className="relative z-10">Mulai Tur Aplikasi</span>
+          </button>
         </div>
 
         {/* Pain Points Section */}

@@ -5,7 +5,8 @@ interface TaxpayerState {
   profile: TaxpayerProfile | null;
   isLoading: boolean;
   isMfaVerified: boolean;
-  setProfile: (profile: TaxpayerProfile) => void;
+  setProfile: (profile: TaxpayerProfile | null) => void;
+  setIsLoading: (status: boolean) => void;
   setMfaStatus: (status: boolean) => void;
   clearStore: () => void;
 }
@@ -16,6 +17,7 @@ export const useTaxpayerStore = create<TaxpayerState>((set) => ({
   isMfaVerified: false,
 
   setProfile: (profile) => set({ profile }),
+  setIsLoading: (status) => set({ isLoading: status }),
   setMfaStatus: (status) => set({ isMfaVerified: status }),
   clearStore: () => set({ profile: null, isMfaVerified: false, isLoading: false }),
 }));

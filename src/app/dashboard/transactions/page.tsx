@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Tooltip from '@/components/Tooltip';
 import { useAlert } from '@/contexts/AlertContext';
 import { ModernSelect } from '@/components/ui/ModernSelect';
-import { useAccounting } from '@/hooks/useAccounting';
 
 interface Transaction {
   id: string;
@@ -14,9 +13,6 @@ interface Transaction {
   category: string;
   description: string;
   tax_type: string;
-  transaction_type?: string;
-  debit_account_id?: string;
-  credit_account_id?: string;
 }
 
 const CATEGORY_TAX_MAPPING: Record<
@@ -82,31 +78,6 @@ export default function TransactionsPage() {
   const [category, setCategory] = useState<string>('Gaji / Upah Karyawan');
   const [description, setDescription] = useState<string>('');
   const [taxType, setTaxType] = useState<string>('PPh Pasal 21 (Non-Final)');
-
-  // Accounting States
-  const [transactionType, setTransactionType] = useState<string>('Income');
-  const [debitAccountId, setDebitAccountId] = useState<string>('');
-  const [creditAccountId, setCreditAccountId] = useState<string>('');
-  const { accounts } = useAccounting();
-
-  const debitOptions = useMemo(() => {
-    let filtered = accounts;
-    if (transactionType === 'Cost' || transactionType === 'Expense') filtered = accounts.filter(a => a.account_code.startsWith('5') || a.account_code.startsWith('1'));
-    if (transactionType === 'Income' || transactionType === 'Revenue') filtered = accounts.filter(a => a.account_code.startsWith('1')); 
-    return filtered.map(a => ({ value: a.id, label: `${a.account_code} - ${a.account_name}` }));
-  }, [accounts, transactionType]);
-
-  const creditOptions = useMemo(() => {
-    let filtered = accounts;
-    if (transactionType === 'Cost' || transactionType === 'Expense') filtered = accounts.filter(a => a.account_code.startsWith('1') || a.account_code.startsWith('2'));
-    if (transactionType === 'Income' || transactionType === 'Revenue') filtered = accounts.filter(a => a.account_code.startsWith('4')); 
-    return filtered.map(a => ({ value: a.id, label: `${a.account_code} - ${a.account_name}` }));
-  }, [accounts, transactionType]);
-
-  useEffect(() => {
-    if (debitOptions.length > 0 && !debitOptions.find(o => o.value === debitAccountId)) setDebitAccountId(debitOptions[0].value);
-    if (creditOptions.length > 0 && !creditOptions.find(o => o.value === creditAccountId)) setCreditAccountId(creditOptions[0].value);
-  }, [debitOptions, creditOptions, debitAccountId, creditAccountId]);
 
   // Filter & Search State
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,9 +180,6 @@ export default function TransactionsPage() {
           category,
           description,
           tax_type: taxType,
-          transaction_type: transactionType,
-          debit_account_id: debitAccountId || null,
-          credit_account_id: creditAccountId || null,
         });
 
       if (error) throw error;
@@ -231,7 +199,7 @@ export default function TransactionsPage() {
 
   // Hapus Transaksi
   const handleDelete = async (id: string) => {
-    if (!(await showConfirm('Hapus Transaksi', 'Apakah Anda yakin ingin menghapus transaksi ini?', 'Ya, Hapus', 'Batal'))) return;
+    if (!(await showConfirm('Hapus Transaksi', 'Apakah Anda yakin ingin menghapus transaksi ini?', 'Ya, Hapus', 'Batal', 'error'))) return;
     try {
       const { error } = await supabase
         .from('transactions')
@@ -290,10 +258,10 @@ export default function TransactionsPage() {
       )}
 
 
-        <div className="flex flex-col gap-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* FORM INPUT TRANSAKSI (FR-04) & REKOMENDASI KLASIFIKASI (FR-08) */}
-          <div className="w-full bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
+          <div className="lg:col-span-1 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
             <h3 className="text-lg font-bold text-white tracking-tight border-b border-slate-800/80 pb-4">
               Catat Transaksi Baru
             </h3>
@@ -328,93 +296,75 @@ export default function TransactionsPage() {
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    Tanggal Transaksi
-                    <Tooltip content="Tanggal terjadinya transaksi penerimaan atau pengeluaran finansial Anda." />
-                  </label>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
+                  Tanggal Transaksi
+                  <Tooltip content="Tanggal terjadinya transaksi penerimaan atau pengeluaran finansial Anda." />
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-slate-950/60 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
+                  Nominal Transaksi (Gross)
+                  <Tooltip content="Jumlah nominal uang bruto (kotor) dari transaksi ini sebelum dipotong PPh." />
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                   <input
-                    type="date"
+                    type="number"
                     required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-slate-950/60 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    Nominal Transaksi (Gross)
-                    <Tooltip content="Jumlah nominal uang bruto (kotor) dari transaksi ini sebelum dipotong PPh." />
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-xs font-semibold text-slate-500">Rp</span>
-                    <input
-                      type="number"
-                      required
-                      placeholder="0"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-slate-950/60 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    Kategori Finansial
-                    <Tooltip content="Pilih kategori aktivitas. Sistem akan langsung mencocokkan jenis PPh yang paling relevan secara semi-otomatis!" />
-                  </label>
-                  <ModernSelect
-                    value={category}
-                    onChange={setCategory}
-                    className="z-50"
-                    options={Object.keys(CATEGORY_TAX_MAPPING).map((cat) => ({ value: cat, label: cat }))}
+                    placeholder="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-slate-950/60 border border-slate-800 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    Keterangan / Deskripsi
-                    <Tooltip content="Tuliskan detail penerima/sumber dana atau nama kegiatan untuk mempermudah pencarian audit trail." />
-                  </label>
-                  <textarea
-                    placeholder="Tuliskan keterangan detail transaksi..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
-                    className="w-full h-[116px] bg-slate-950/60 border border-slate-800 text-white rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none font-medium"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
+                  Kategori Finansial
+                  <Tooltip content="Pilih kategori aktivitas. Sistem akan langsung mencocokkan jenis PPh yang paling relevan secara semi-otomatis!" />
+                </label>
+                <ModernSelect
+                  value={category}
+                  onChange={setCategory}
+                  className="z-50"
+                  options={Object.keys(CATEGORY_TAX_MAPPING).map((cat) => ({ value: cat, label: cat }))}
+                />
+              </div>
 
-                {/* SEKSI KLASIFIKASI SEMI-OTOMATIS (FR-08) & TOOLTIP EDUKATIF (FR-12) */}
-                <div className="md:col-span-1 space-y-2.5 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex flex-col justify-center">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase flex items-center">
-                      Rekomendasi Pajak
-                    </span>
-                    <span className="text-[9px] bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold px-2 py-0.5 rounded-full uppercase">Semi-Auto</span>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={taxType}
-                    onChange={(e) => setTaxType(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/80 text-blue-300 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:ring-1 focus:ring-blue-500/40 outline-none transition-all"
-                  />
-                  
-                  {/* Tooltip Explainer FR-12 */}
-                  <div className="pt-2 border-t border-slate-800/80 mt-auto">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">UU HPP:</span>
-                    <p className="text-[10px] text-slate-400 leading-relaxed font-medium line-clamp-2" title={CATEGORY_TAX_MAPPING[category]?.tooltip}>
-                      {CATEGORY_TAX_MAPPING[category]?.tooltip}
-                    </p>
-                  </div>
+              {/* SEKSI KLASIFIKASI SEMI-OTOMATIS (FR-08) & TOOLTIP EDUKATIF (FR-12) */}
+              <div className="space-y-2.5 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase flex items-center">
+                    Rekomendasi Jenis Pajak
+                    <Tooltip content="Tipe PPh yang direkomendasikan berdasarkan regulasi Harmonisasi Perpajakan terbaru." />
+                  </span>
+                  <span className="text-[9px] bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold px-2 py-0.5 rounded-full uppercase">Semi-Auto</span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={taxType}
+                  onChange={(e) => setTaxType(e.target.value)}
+                  className="w-full bg-slate-950/40 border border-slate-800/80 text-blue-300 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:ring-1 focus:ring-blue-500/40 outline-none transition-all"
+                />
+                
+                {/* Tooltip Explainer FR-12 */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Keterangan Regulasi UU HPP:</span>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                    {CATEGORY_TAX_MAPPING[category]?.tooltip}
+                  </p>
                 </div>
               </div>
 
@@ -432,64 +382,6 @@ export default function TransactionsPage() {
                 />
               </div>
 
-              {/* ACCOUNTING SECTION */}
-              <div className="space-y-3 pt-3 border-t border-slate-800/80">
-                <label className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center">
-                  Jurnal Akuntansi Otomatis
-                  <Tooltip content="Sistem Double-Entry terotomatisasi. Tipe dan akun akan menyesuaikan." />
-                </label>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-400 uppercase tracking-wider">Tipe Transaksi</label>
-                    <ModernSelect
-                      value={transactionType}
-                      onChange={setTransactionType}
-                      className="z-40"
-                      options={[
-                        { value: 'Income', label: 'Income (Pendapatan)' },
-                        { value: 'Cost', label: 'Cost/Expense (Beban)' },
-                        { value: 'Transfer', label: 'Transfer Aset' },
-                        { value: 'Receivable', label: 'Piutang' },
-                        { value: 'Payable', label: 'Hutang' },
-                        { value: 'Adjustment', label: 'Penyesuaian' }
-                      ]}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-400 uppercase tracking-wider">Akun Debit</label>
-                    <ModernSelect
-                      value={debitAccountId}
-                      onChange={setDebitAccountId}
-                      className="z-30"
-                      options={debitOptions.length > 0 ? debitOptions : [{ value: '', label: 'Belum ada akun' }]}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-400 uppercase tracking-wider">Akun Kredit</label>
-                    <ModernSelect
-                      value={creditAccountId}
-                      onChange={setCreditAccountId}
-                      className="z-30"
-                      options={creditOptions.length > 0 ? creditOptions : [{ value: '', label: 'Belum ada akun' }]}
-                    />
-                  </div>
-                </div>
-
-                {/* Journal Preview */}
-                <div className="mt-4 p-3 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[10px] space-y-1 text-slate-300">
-                  <div className="flex justify-between">
-                    <span>(Dr) {accounts.find(a => a.id === debitAccountId)?.account_name || '...'}</span>
-                    <span className="text-emerald-400 font-bold">Rp {amount ? parseFloat(amount).toLocaleString('id-ID') : '0'}</span>
-                  </div>
-                  <div className="flex justify-between pl-4">
-                    <span>(Cr) {accounts.find(a => a.id === creditAccountId)?.account_name || '...'}</span>
-                    <span className="text-blue-400 font-bold">Rp {amount ? parseFloat(amount).toLocaleString('id-ID') : '0'}</span>
-                  </div>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={submitting}
@@ -502,7 +394,7 @@ export default function TransactionsPage() {
           </div>
 
           {/* DATA TABLE & FILTER PENGELOLAAN TRANSAKSI (FR-04) */}
-          <div className="w-full space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             
             {/* Bar Filter dan Pencarian */}
             <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col sm:flex-row gap-4 items-center justify-between">

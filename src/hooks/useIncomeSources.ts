@@ -26,7 +26,7 @@ export function useFetchIncomeSources(taxYear?: number) {
     queryFn: async () => {
       const demoState = useDemoStore.getState();
       if (demoState.isDemoMode) {
-        return taxYear ? demoState.demoIncomeSources.filter(i => i.taxYear === taxYear) : demoState.demoIncomeSources;
+        return (taxYear ? demoState.demoIncomeSources.filter(i => i.taxYear === taxYear) : demoState.demoIncomeSources) as IncomeSource[];
       }
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,7 +52,7 @@ export function useFetchIncomeSources(taxYear?: number) {
 
       return (data || []).map((d: any) => ({
         id: d.id,
-        userId: d.user_id,
+        user_id: d.user_id,
         category: d.category,
         sourceName: d.source_name,
         sourceType: d.source_type,
@@ -70,7 +70,7 @@ export function useFetchIncomeSources(taxYear?: number) {
         created_at: d.created_at,
         npwpPemotong: d.npwp_pemotong,
         namaPemotong: d.company_name,
-      }));
+      })) as IncomeSource[];
     },
   });
 }

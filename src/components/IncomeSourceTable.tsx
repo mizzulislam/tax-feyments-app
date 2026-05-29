@@ -43,7 +43,8 @@ const TYPE_LABELS: Record<string, { label: string; badge: string }> = {
 };
 
 export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTableProps) {
-  const { data: sources = [], isLoading, isError, error } = useFetchIncomeSources(taxYear);
+  const { data: _sources = [], isLoading, isError, error } = useFetchIncomeSources(taxYear);
+  const sources = _sources as IncomeSource[];
   const deleteMutation = useDeleteIncomeSource();
   const { showAlert, showConfirm } = useAlert();
 
@@ -102,8 +103,14 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
               </tr>
             ) : sources.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
-                  Belum ada sumber penghasilan tercatat untuk tahun pajak {taxYear}.
+                <td colSpan={6} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500 mb-2 shadow-inner border border-slate-700/50">
+                      <svg className="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <p className="text-slate-300 font-bold text-sm">Belum Ada Data Penghasilan</p>
+                    <p className="text-slate-500 font-medium text-xs max-w-xs leading-relaxed">Sumber penghasilan Anda untuk tahun pajak {taxYear} akan tampil di sini setelah Anda menambahkannya.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -111,11 +118,11 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
                 <tr key={s.id} className="hover:bg-slate-900/20 transition-all duration-150 divide-x divide-slate-800/30">
                   <td className="py-4.5 px-6">
                     <span className="font-bold text-white block mb-0.5">{s.sourceName}</span>
-                    {s.metadata?.jenisPemotongan === 'bulanan' && s.metadata?.taxPeriod && (
+                    {s.metadata?.jenisPemotongan === 'bulanan' && s.metadata?.taxPeriod ? (
                       <span className="text-[10px] text-blue-400 font-bold block mb-0.5">
-                        Masa Pajak: {MONTH_NAMES[s.metadata.taxPeriod as string] || s.metadata.taxPeriod}
+                        Masa Pajak: {MONTH_NAMES[s.metadata.taxPeriod as string] || (s.metadata.taxPeriod as string)}
                       </span>
-                    )}
+                    ) : null}
                   </td>
                   <td className="py-4.5 px-6">
                     {s.namaPemotong ? (
@@ -142,14 +149,17 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
                       >
                         {TYPE_LABELS[s.sourceType]?.label || s.sourceType}
                       </span>
-                      {s.metadata && (
-                        <span className="text-[9px] text-slate-500 font-medium">
-                          {s.sourceType === 'pekerjaan_bebas' && s.metadata.tidakFinalCategory}
-                          {s.sourceType === 'sewa' && (s.metadata.sewaKategori === 'pphFinal' ? 'PPh Final 10%' : 'PPh 23 (2%)')}
-                          {s.sourceType === 'investasi' && String(s.metadata.investasiKategori).replace('investasi_', '')}
-                          {s.sourceType === 'lainnya' && String(s.metadata.lainnyaKategori).replace('pph22_', '').replace('pph23_', '')}
+                      {s.metadata ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 font-semibold shadow-inner text-xs border border-slate-700/50">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                          <span className="truncate max-w-[120px]" title={JSON.stringify(s.metadata)}>
+                            {s.sourceType === 'pekerjaan_bebas' ? (s.metadata.tidakFinalCategory as string) : null}
+                            {s.sourceType === 'sewa' ? (s.metadata.sewaKategori === 'pphFinal' ? 'PPh Final 10%' : 'PPh 23 (2%)') : null}
+                            {s.sourceType === 'investasi' ? String(s.metadata.investasiKategori).replace('investasi_', '') : null}
+                            {s.sourceType === 'lainnya' ? String(s.metadata.lainnyaKategori).replace('pph22_', '').replace('pph23_', '') : null}
+                          </span>
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                   <td className="py-4.5 px-6 font-bold text-white font-mono whitespace-nowrap">

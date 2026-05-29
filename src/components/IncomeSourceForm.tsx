@@ -303,24 +303,24 @@ export default function IncomeSourceForm({
         if (metadata?.corporateTaxMode === 'umkm_final') {
           estimatedTax = Math.max(0, (annualIncome - 500000000) * 0.005);
         } else {
-          estimatedTax = calculateCorporateIncomeTax(annualIncome, annualIncome, true, metadata?.corporateTaxMode || 'general').taxDue;
+          estimatedTax = calculateCorporateIncomeTax(annualIncome, annualIncome, true, metadata?.corporateTaxMode || 'general').tax;
         }
       } else if (sourceType === 'sewa') {
         if (metadata?.sewaKategori === 'pph23') {
-          estimatedTax = calculatePph23(annualIncome, 'service_rent', false, isGrossUp).taxDue;
+          estimatedTax = calculatePph23(annualIncome, 'service_rent', false, isGrossUp).tax;
         } else {
-          estimatedTax = calculateFinalTax(annualIncome, 'land_building_rent', isGrossUp).taxDue;
+          estimatedTax = calculateFinalTax(annualIncome, 'land_building_rent', isGrossUp).tax;
         }
       } else if (sourceType === 'investasi') {
         if (metadata?.investasiKategori === 'investasi_bunga') {
-          estimatedTax = calculatePph23(annualIncome, 'royalty_dividend_interest', false, isGrossUp).taxDue;
+          estimatedTax = calculatePph23(annualIncome, 'royalty_dividend_interest', false, isGrossUp).tax;
         } else if (metadata?.investasiKategori === 'investasi_luar_negeri') {
-          estimatedTax = calculatePph26(annualIncome, 'gross_income', 0.20, isGrossUp).taxDue;
+          estimatedTax = calculatePph26(annualIncome, 'gross_income', 0.20, isGrossUp).tax;
         } else {
           estimatedTax = Math.round(annualIncome * 0.10); // final dividen
         }
       } else if (sourceType === 'lainnya') {
-        estimatedTax = calculatePphUnification(annualIncome, (metadata?.lainnyaKategori as any) || 'pph22_government_goods', false, isGrossUp).taxDue;
+        estimatedTax = calculatePphUnification(annualIncome, (metadata?.lainnyaKategori as any) || 'pph22_government_goods', false, isGrossUp).tax;
       }
 
       setValue('withheldAmount', Math.max(0, estimatedTax));
@@ -418,7 +418,7 @@ export default function IncomeSourceForm({
                 control={control}
                 render={({ field }) => (
                   <ModernSelect
-                    value={field.value}
+                    value={field.value as any}
                     onChange={field.onChange}
                     className="z-50"
                     options={[
@@ -455,21 +455,21 @@ export default function IncomeSourceForm({
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis Pemotongan</label>
                     <Controller name="metadata.jenisPemotongan" control={control} render={({ field }) => (
-                      <ModernSelect value={field.value} onChange={field.onChange} options={jenisPemotonganOptions} />
+                      <ModernSelect value={field.value as any} onChange={field.onChange} options={jenisPemotonganOptions} />
                     )} />
                   </div>
                   {jenisPemotongan === 'bulanan' ? (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Masa Pajak (Bulan)</label>
                       <Controller name="metadata.taxPeriod" control={control} render={({ field }) => (
-                        <ModernSelect value={field.value} onChange={field.onChange} options={taxPeriodOptions} />
+                        <ModernSelect value={field.value as any} onChange={field.onChange} options={taxPeriodOptions} />
                       )} />
                     </div>
                   ) : (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status PTKP</label>
                       <Controller name="metadata.ptkpStatus" control={control} render={({ field }) => (
-                        <ModernSelect value={field.value} onChange={field.onChange} options={ptkpOptions} />
+                        <ModernSelect value={field.value as any} onChange={field.onChange} options={ptkpOptions} />
                       )} />
                     </div>
                   )}
@@ -484,7 +484,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.gaji" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className={`w-full bg-slate-950/50 border ${((errors.metadata as any)?.gaji) ? 'border-red-500' : 'border-slate-800'} text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono`} />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className={`w-full bg-slate-950/50 border ${((errors.metadata as any)?.gaji) ? 'border-red-500' : 'border-slate-800'} text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono`} />
                         )} />
                       </div>
                       {((errors.metadata as any)?.gaji) && <span className="text-[10px] text-red-500">{String(((errors.metadata as any).gaji).message)}</span>}
@@ -494,7 +494,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.tunjangan" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -503,7 +503,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.bonus" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -515,7 +515,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.tahunanGaji" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -524,7 +524,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.tahunanTunjanganPph" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -533,7 +533,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.tahunanTunjanganLainnya" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -542,7 +542,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.tahunanHonorarium" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -551,7 +551,7 @@ export default function IncomeSourceForm({
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-semibold text-slate-500">Rp</span>
                         <Controller name="metadata.iuranPensiun" control={control} render={({ field }) => (
-                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
+                          <input type="text" inputMode="numeric" value={formatNumberInput(field.value as any)} onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))} className="w-full bg-slate-950/50 border border-slate-800 text-white rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono" />
                         )} />
                       </div>
                     </div>
@@ -560,7 +560,7 @@ export default function IncomeSourceForm({
                 <div className="space-y-1.5 mt-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema Perhitungan</label>
                   <Controller name="metadata.isGrossUp" control={control} render={({ field }) => (
-                    <SchemeRadioPicker value={field.value} onChange={field.onChange} options={[
+                    <SchemeRadioPicker value={field.value as any} onChange={field.onChange} options={[
                       { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
                       { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi' }
                     ]} />
@@ -574,7 +574,7 @@ export default function IncomeSourceForm({
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kode Objek Pajak</label>
                   <Controller name="metadata.tidakFinalCategory" control={control} render={({ field }) => (
-                    <ModernSelect value={field.value} onChange={field.onChange} options={pph21TidakFinalOptions} />
+                    <ModernSelect value={field.value as any} onChange={field.onChange} options={pph21TidakFinalOptions} />
                   )} />
                 </div>
                 <div className="space-y-1.5">
@@ -590,7 +590,7 @@ export default function IncomeSourceForm({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Sewa</label>
                 <Controller name="metadata.sewaKategori" control={control} render={({ field }) => (
-                  <ModernSelect value={field.value} onChange={field.onChange} options={pph23SewaOptions} />
+                  <ModernSelect value={field.value as any} onChange={field.onChange} options={pph23SewaOptions} />
                 )} />
               </div>
             )}
@@ -599,7 +599,7 @@ export default function IncomeSourceForm({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Investasi</label>
                 <Controller name="metadata.investasiKategori" control={control} render={({ field }) => (
-                  <ModernSelect value={field.value} onChange={field.onChange} options={investasiOptions} />
+                  <ModernSelect value={field.value as any} onChange={field.onChange} options={investasiOptions} />
                 )} />
               </div>
             )}
@@ -608,7 +608,7 @@ export default function IncomeSourceForm({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Unifikasi Khusus</label>
                 <Controller name="metadata.lainnyaKategori" control={control} render={({ field }) => (
-                  <ModernSelect value={field.value} onChange={field.onChange} options={pphUnificationOptions} />
+                  <ModernSelect value={field.value as any} onChange={field.onChange} options={pphUnificationOptions} />
                 )} />
               </div>
             )}
@@ -618,7 +618,7 @@ export default function IncomeSourceForm({
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jenis Skema Badan / Usaha</label>
                   <Controller name="metadata.corporateTaxMode" control={control} render={({ field }) => (
-                    <ModernSelect value={field.value} onChange={field.onChange} options={corporateTaxModeOptions} />
+                    <ModernSelect value={field.value as any} onChange={field.onChange} options={corporateTaxModeOptions} />
                   )} />
                 </div>
                 <div className="space-y-1.5 mt-2">
@@ -642,7 +642,7 @@ export default function IncomeSourceForm({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skema Perhitungan</label>
                 <Controller name="metadata.isGrossUp" control={control} render={({ field }) => (
-                  <SchemeRadioPicker value={field.value} onChange={field.onChange} options={[
+                  <SchemeRadioPicker value={field.value as any} onChange={field.onChange} options={[
                     { value: false, label: 'Gross', tooltip: 'Dipotong dari Penghasilan' },
                     { value: true, label: 'Gross Up', tooltip: 'Ditanggung Pemberi' }
                   ]} />
@@ -664,7 +664,7 @@ export default function IncomeSourceForm({
                       type="text"
                       inputMode="numeric"
                       readOnly={sourceType === 'pekerjaan_tetap'}
-                      value={formatNumberInput(field.value)}
+                      value={formatNumberInput(field.value as any)}
                       onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
                       className={`w-full bg-slate-950/50 border text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 outline-none transition-all font-mono ${sourceType === 'pekerjaan_tetap' ? 'opacity-70 cursor-not-allowed border-slate-800 focus:ring-blue-500/50 focus:border-blue-500' : (errors.annualIncome ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500' : 'border-slate-800 focus:ring-blue-500/50 focus:border-blue-500')}`}
                     />
@@ -687,7 +687,7 @@ export default function IncomeSourceForm({
                 control={control}
                 render={({ field }) => (
                   <SchemeRadioPicker
-                    value={field.value}
+                    value={field.value as any}
                     onChange={field.onChange}
                     options={[
                       { value: false, label: 'Belum Dipotong', tooltip: 'Pajak dihitung di akhir tahun.' },
@@ -746,7 +746,7 @@ export default function IncomeSourceForm({
                         <input
                           type="text"
                           inputMode="numeric"
-                          value={formatNumberInput(field.value)}
+                          value={formatNumberInput(field.value as any)}
                           onChange={(e) => field.onChange(parseFormattedNumber(e.target.value))}
                           className="w-full bg-slate-950/40 border border-slate-800/80 text-white rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-mono"
                         />

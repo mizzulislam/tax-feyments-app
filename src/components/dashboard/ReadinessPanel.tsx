@@ -22,6 +22,7 @@ function getHealthBadgeColor(health: string) {
 
 export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }) {
   const profile = useTaxpayerStore((state) => state.profile);
+  const isLoading = useTaxpayerStore((state) => state.isLoading);
   const taxYear = new Date().getFullYear();
   const { data: incomeSources } = useFetchIncomeSources(taxYear);
   const { data: documents } = useFetchDocuments(undefined, taxYear);
@@ -37,21 +38,49 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
   const readiness = calculateReadiness({
     profile: isDemoMode ? demoProfile || profile : profile,
     reports,
-    incomeSources: incomeSources || [],
-    documents: documents || [],
+    incomeSources: (incomeSources || []) as any,
+    documents: (documents || []) as any,
     taxYear,
   });
 
   // Watch for Demo Completion
   useEffect(() => {
-    if (isDemoMode && readiness.score >= 100) {
+    const isTourCompleted = localStorage.getItem('myTax_tour_completed') === 'true';
+    
+    const checkAndShowModal = () => {
+      if (isDemoMode && readiness.score >= 100) {
+        setTimeout(() => setShowCompletionModal(true), 1500);
+      }
+    };
+
+    if (isDemoMode && readiness.score >= 100 && isTourCompleted) {
       // Small delay to let the user see the 100% animation first
       const timer = setTimeout(() => setShowCompletionModal(true), 1500);
       return () => clearTimeout(timer);
     } else {
       setShowCompletionModal(false);
     }
+
+    const handleTourCompleted = () => {
+      checkAndShowModal();
+    };
+    
+    window.addEventListener('tour_completed', handleTourCompleted);
+    return () => window.removeEventListener('tour_completed', handleTourCompleted);
   }, [isDemoMode, readiness.score]);
+
+  if (isLoading || !mounted) {
+    return (
+      <div className="rounded-3xl border border-slate-800/60 bg-slate-900/40 p-6 md:p-8 animate-pulse shadow-2xl">
+        <div className="h-8 w-1/3 bg-slate-800 rounded-xl mb-6"></div>
+        <div className="h-24 w-full bg-slate-800 rounded-2xl mb-6"></div>
+        <div className="flex gap-4">
+          <div className="h-12 w-32 bg-slate-800 rounded-xl"></div>
+          <div className="h-12 w-32 bg-slate-800 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   const totalDraftPayable = reports.filter((report) => report.status === 'draft').reduce((sum, current) => sum + current.tax_payable, 0);
 
@@ -75,7 +104,7 @@ export default function ReadinessPanel({ reports }: { reports: TaxReportData[] }
   let nextActionLink = readiness.nextAction.href;
 
   return (
-    <section className="relative w-full rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 shadow-xl overflow-hidden">
+    <section className="tour-target-readiness relative w-full rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 shadow-xl overflow-hidden">
       
       <DemoCompletionModal isOpen={showCompletionModal} />
 

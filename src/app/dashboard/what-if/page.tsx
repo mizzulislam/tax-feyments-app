@@ -276,7 +276,7 @@ Bisakah Anda memberikan saran atau strategi perencanaan pajak lebih lanjut untuk
                       <div className="mt-4 pt-4 border-t border-slate-800/80 flex justify-end">
                         <button 
                           onClick={async () => {
-                            if(await showConfirm('Hapus Skenario', 'Hapus skenario ini?', 'Ya, Hapus', 'Batal')) deleteScenario(s.id);
+                            if(await showConfirm('Hapus Skenario', 'Hapus skenario ini?', 'Ya, Hapus', 'Batal', 'error')) deleteScenario(s.id);
                           }}
                           disabled={isDeleting}
                           className="text-xs text-red-400 hover:text-red-300 font-bold transition-colors disabled:opacity-50"

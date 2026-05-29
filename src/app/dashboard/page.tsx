@@ -15,6 +15,7 @@ import ExportReportButton from '@/components/dashboard/ExportReportButton';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { useDemoStore } from '@/store/useDemoStore';
+import { IncomeSource } from '@/types/taxpayer';
 
 type TabType = 'overview' | 'analytics' | 'history' | 'calendar';
 
@@ -57,7 +58,7 @@ function DashboardContent() {
   }
 
   const reportsData = reports || [];
-  const incomeData = incomeSources || [];
+  const incomeData = (incomeSources || []) as IncomeSource[];
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 relative">

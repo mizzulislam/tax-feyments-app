@@ -60,7 +60,7 @@ export default function TaxHistoryTable({
   });
 
   const handleDelete = async (id: string) => {
-    if (await showConfirm('Hapus Data', 'Apakah Anda yakin ingin menghapus catatan penghasilan ini?', 'Ya, Hapus', 'Batal')) {
+    if (await showConfirm('Hapus Data', 'Apakah Anda yakin ingin menghapus catatan penghasilan ini?', 'Ya, Hapus', 'Batal', 'error')) {
       deleteMutation.mutate(id);
     }
   };
