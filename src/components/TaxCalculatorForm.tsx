@@ -36,7 +36,6 @@ import {
   type Pph21TidakFinalCategory,
   type Pph21TidakFinalJenis,
 } from '@/lib/taxEngine';
-import { useMutateReport } from '@/hooks/useMutateReport';
 import Tooltip from './Tooltip';
 import OcrUploader from './OcrUploader';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
@@ -379,28 +378,13 @@ interface TaxCalculatorFormProps {
 }
 
 export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormProps) {
-  const { mutate, isPending, error: serverError } = useMutateReport();
   const [step, setStep] = useState(1);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
-  const [saveDialog, setSaveDialog] = useState<SaveDialog | null>(null);
 
   useEffect(() => {
     setStep(1);
     setOpenSelect(null);
   }, [calculatorType]);
-
-  useEffect(() => {
-    if (!saveDialog) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setSaveDialog(null);
-      }
-    };
-
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [saveDialog]);
 
   // Step 1: Penghasilan Bruto
   const [taxYear, setTaxYear] = useState(2026);
@@ -561,91 +545,10 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
     </div>
   );
 
-  // Handle Pengiriman
-  const handleSave = (status: 'draft' | 'submitted') => {
-    mutate({
-      taxYear,
-      taxPeriod: isAnnual ? '12' : taxPeriod,
-      grossIncome,
-      ptkpStatus,
-      pensionContribution: iuranPensiun,
-      status,
-    }, {
-      onSuccess: () => {
-        setSaveDialog({
-          title: status === 'submitted' ? 'Laporan Terkirim' : 'Draf Tersimpan',
-          message: status === 'submitted'
-            ? 'Laporan resmi perpajakan Anda berhasil disubmit dan siap dipantau dari riwayat.'
-            : 'Simulasi pajak berhasil disimpan sebagai draf. Anda bisa melanjutkannya kembali kapan saja.',
-          label: status === 'submitted' ? 'Selesai' : 'OK',
-        });
-        // Reset Form ke Step 1
-        setStep(1);
-        setGaji(0);
-        setTunjangan(0);
-        setBonus(0);
-        setIuranPensiun(0);
-        setZakatSumbangan(0);
-        setPreviousNetIncome(0);
-        setWithheldTaxCredit(0);
-        setEmploymentStatus('21-100-01');
-        setCalculationScheme('gross');
-        setPtkpStatus('TK/0');
-      }
-    });
-  };
+
 
   return (
     <>
-      {saveDialog && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-md animate-in fade-in duration-200"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tax-save-dialog-title"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSaveDialog(null);
-            }
-          }}
-        >
-          <div className="relative w-full max-w-sm overflow-visible rounded-3xl p-[1px] shadow-2xl shadow-black/50 animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
-            <div className="pointer-events-none absolute -inset-[2px] rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.58),rgba(14,165,233,0.18)_40%,rgba(99,102,241,0.28)_68%,rgba(15,23,42,0.1))] opacity-80 blur-md"></div>
-            <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.74),rgba(30,64,175,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]"></div>
-            <div className="relative rounded-[23px] bg-slate-950/95 p-5 shadow-[inset_0_1px_0_rgba(148,163,184,0.1)] backdrop-blur-2xl">
-              <div className="flex items-start gap-4">
-                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-400/30 bg-blue-500/10 text-blue-300 shadow-[0_0_24px_rgba(59,130,246,0.25)]">
-                  <div className="absolute inset-2 rounded-full bg-blue-400/20 blur-md"></div>
-                  <svg className="relative h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="m5 13 4 4L19 7" />
-                  </svg>
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300/80">Berhasil</p>
-                  <h3 id="tax-save-dialog-title" className="mt-1 text-lg font-black tracking-tight text-white">
-                    {saveDialog.title}
-                  </h3>
-                  <p className="mt-2 text-sm font-medium leading-relaxed text-slate-400">
-                    {saveDialog.message}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSaveDialog(null)}
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-950/30 transition-all hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
-                >
-                  {saveDialog.label}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       <div className="relative w-full self-start bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl">
         <div className="relative z-10 mb-8">
@@ -1724,18 +1627,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 )}
               </div>
               
-              {serverError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
-                  {serverError.message}
-                </div>
-              )}
-
               <div className="flex justify-end pt-2 gap-3">
                 <button type="button" onClick={() => { setGaji(0); setTunjangan(0); }} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
-                </button>
               </div>
             </div>
           )}
@@ -1779,18 +1672,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 </div>
               </div>
               
-              {serverError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
-                  {serverError.message}
-                </div>
-              )}
-
               <div className="flex justify-end pt-2 gap-3">
                 <button type="button" onClick={() => setFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
-                </button>
               </div>
             </div>
           )}
@@ -1850,18 +1733,8 @@ export default function TaxCalculatorForm({ calculatorType }: TaxCalculatorFormP
                 </div>
               </div>
               
-              {serverError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded-xl font-medium">
-                  {serverError.message}
-                </div>
-              )}
-
               <div className="flex justify-end pt-2 gap-3">
                 <button type="button" onClick={() => setTidakFinalGrossIncome(0)} className="px-6 py-3 rounded-xl border border-red-500/50 bg-red-500/10 text-red-500 font-bold text-xs hover:bg-red-500/20 transition-all uppercase tracking-wider">Reset</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('draft')} className="px-6 py-3 rounded-xl border border-amber-500 bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Simpan sebagai Draf</button>
-                <button type="button" disabled={isPending} onClick={() => handleSave('submitted')} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-md text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isPending ? 'Mengirim...' : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Selesaikan Laporan</>}
-                </button>
               </div>
             </div>
           )}

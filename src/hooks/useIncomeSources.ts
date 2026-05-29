@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { IncomeSourceInput, IncomeSource } from '@/types/taxpayer';
+import { useDemoStore } from '@/store/useDemoStore';
 
 type IncomeSourceRow = {
   id: string;
@@ -14,14 +15,20 @@ type IncomeSourceRow = {
   withheld_amount: number | string;
   registration_year_for_umkm: number | string | null;
   notes: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 };
 
 // Fetch Hook
 export function useFetchIncomeSources(taxYear?: number) {
   return useQuery<IncomeSource[]>({
-    queryKey: taxYear ? ['income_sources_list', taxYear] : ['income_sources_list'],
+    queryKey: ['income_sources', taxYear],
     queryFn: async () => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        return taxYear ? demoState.demoIncomeSources.filter(i => i.taxYear === taxYear) : demoState.demoIncomeSources;
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
@@ -43,31 +50,44 @@ export function useFetchIncomeSources(taxYear?: number) {
         throw new Error(error.message);
       }
 
-      // Map snake_case database columns to camelCase Zod schema properties
-      return ((data || []) as IncomeSourceRow[]).map((d) => ({
+      return (data || []).map((d: any) => ({
         id: d.id,
-        user_id: d.user_id,
+        userId: d.user_id,
+        category: d.category,
         sourceName: d.source_name,
         sourceType: d.source_type,
+        companyName: d.company_name,
         annualIncome: Number(d.annual_income),
-        taxYear: Number(d.tax_year),
-        npwpPemotong: d.npwp_pemotong,
+        grossAmount: Number(d.gross_amount),
+        taxDeducted: Number(d.tax_deducted),
         isTaxWithheld: d.is_tax_withheld,
         withheldAmount: Number(d.withheld_amount),
-        registrationYearForUmkm: d.registration_year_for_umkm ? Number(d.registration_year_for_umkm) : null,
+        taxYear: Number(d.tax_year),
+        documentPath: d.document_path,
+        isVerified: d.is_verified,
         notes: d.notes,
+        metadata: d.metadata,
         created_at: d.created_at,
+        npwpPemotong: d.npwp_pemotong,
+        namaPemotong: d.company_name,
       }));
     },
   });
 }
 
-// Mutate Hook (Insert & Update)
+// Create or update income source
 export function useMutateIncomeSource() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, ...input }: { id?: string } & IncomeSourceInput) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network
+        demoState.addDemoIncome(input);
+        return { id: 'demo-id', ...input };
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
 
@@ -75,6 +95,7 @@ export function useMutateIncomeSource() {
         user_id: user.id,
         source_name: input.sourceName,
         source_type: input.sourceType,
+        company_name: input.namaPemotong || null,
         annual_income: input.annualIncome,
         tax_year: input.taxYear,
         npwp_pemotong: input.npwpPemotong || null,
@@ -82,6 +103,7 @@ export function useMutateIncomeSource() {
         withheld_amount: input.isTaxWithheld ? input.withheldAmount : 0,
         registration_year_for_umkm: input.sourceType === 'usaha' ? input.registrationYearForUmkm || null : null,
         notes: input.notes || null,
+        metadata: input.metadata || null,
       };
 
       if (id) {
@@ -108,7 +130,7 @@ export function useMutateIncomeSource() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['income_sources_list'] });
+      queryClient.invalidateQueries({ queryKey: ['income_sources'] });
     },
   });
 }
@@ -119,6 +141,13 @@ export function useDeleteIncomeSource() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        demoState.deleteDemoIncome(id);
+        return id;
+      }
+
       const { error } = await supabase
         .from('income_sources')
         .delete()
@@ -128,7 +157,7 @@ export function useDeleteIncomeSource() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['income_sources_list'] });
+      queryClient.invalidateQueries({ queryKey: ['income_sources'] });
     },
   });
 }

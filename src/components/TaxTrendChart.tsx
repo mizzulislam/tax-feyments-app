@@ -57,21 +57,30 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
     // 2. Agregasi data per bulan
     const monthMap: Record<string, { gross: number; tax: number }> = {};
     
-    if (data.length === 0) {
-      const defaultMonths = ['2026-01', '2026-02', '2026-03'];
-      defaultMonths.forEach(m => { monthMap[m] = { gross: 0, tax: 0 }; });
+    let maxYear = new Date().getFullYear();
+    if (data.length > 0) {
+      const years = data.map(r => Number(r.tax_year)).filter(y => !isNaN(y));
+      if (years.length > 0) {
+        maxYear = Math.max(...years);
+      }
+    }
+
+    // Inisialisasi 12 bulan penuh untuk tahun terakhir agar garis tren selalu terbentuk
+    for (let i = 1; i <= 12; i++) {
+      const key = `${maxYear}-${String(i).padStart(2, '0')}`;
+      monthMap[key] = { gross: 0, tax: 0 };
     }
 
     data.forEach((r) => {
       const yr = Number(r.tax_year);
       const mo = r.tax_period;
-      if (!isNaN(yr) && mo) {
+      // Filter data bulanan hanya untuk tahun terakhir (maxYear)
+      if (yr === maxYear && !isNaN(yr) && mo) {
         const key = `${yr}-${mo.padStart(2, '0')}`;
-        if (!monthMap[key]) {
-          monthMap[key] = { gross: 0, tax: 0 };
+        if (monthMap[key]) {
+          monthMap[key].gross += r.gross_income;
+          monthMap[key].tax += r.tax_payable;
         }
-        monthMap[key].gross += r.gross_income;
-        monthMap[key].tax += r.tax_payable;
       }
     });
 
@@ -130,33 +139,15 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
             </p>
           </div>
 
-          {/* Toggle and Legend */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center bg-slate-950/50 rounded-lg p-1 border border-slate-800/50 self-start sm:self-auto">
-              <button
-                onClick={() => setViewMode('yearly')}
-                className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'yearly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
-              >
-                Tahunan
-              </button>
-              <button
-                onClick={() => setViewMode('monthly')}
-                className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'monthly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
-              >
-                Bulanan
-              </button>
+          {/* Legenda Grafik */}
+          <div className="flex flex-wrap items-center justify-end gap-3 md:gap-4 text-[11px] md:text-xs font-semibold">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
+              <span className="text-slate-300">Pendapatan Bruto</span>
             </div>
-
-            {/* Legenda Grafik */}
-            <div className="flex flex-wrap items-center gap-3 md:gap-4 text-[11px] md:text-xs font-semibold">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
-                <span className="text-slate-300">Pendapatan Bruto</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
-                <span className="text-slate-300">PPh Terutang</span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+              <span className="text-slate-300">PPh Terutang</span>
             </div>
           </div>
         </div>
@@ -238,6 +229,24 @@ export default function TaxTrendChart({ data }: TaxTrendChartProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Toggle View Mode at Bottom Right */}
+        <div className="flex justify-end pt-2">
+          <div className="flex items-center bg-slate-950/50 rounded-lg p-1 border border-slate-800/50">
+            <button
+              onClick={() => setViewMode('yearly')}
+              className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'yearly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+            >
+              Tahunan
+            </button>
+            <button
+              onClick={() => setViewMode('monthly')}
+              className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${viewMode === 'monthly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+            >
+              Bulanan
+            </button>
+          </div>
         </div>
 
       </div>

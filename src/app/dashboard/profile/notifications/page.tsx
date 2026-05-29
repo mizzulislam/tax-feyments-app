@@ -109,7 +109,7 @@ export default function NotificationSettingsPage() {
             Pengaturan <span className="text-yellow-500 font-extrabold">Notifikasi</span>
           </h1>
           <p className="text-slate-400 max-w-xl text-sm leading-relaxed font-medium">
-            Atur bagaimana sistem dan Tax Feyments berkomunikasi dengan Anda. Kendalikan notifikasi realtime, pengingat deadline, dan jam sibuk Anda.
+            Atur bagaimana sistem dan My Tax berkomunikasi dengan Anda. Kendalikan notifikasi realtime, pengingat deadline, dan jam sibuk Anda.
           </p>
         </div>
         

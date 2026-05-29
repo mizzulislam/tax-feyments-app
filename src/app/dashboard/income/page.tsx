@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import IncomeSourceForm from '@/components/IncomeSourceForm';
 import IncomeSourceTable from '@/components/IncomeSourceTable';
+import IncomeSimulationPanel from '@/components/dashboard/IncomeSimulationPanel';
 import { IncomeSource } from '@/types/taxpayer';
 
 
@@ -93,6 +94,8 @@ export default function IncomePage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
+            
+            <IncomeSimulationPanel taxYear={taxYear} />
           </div>
         </div>
       )}

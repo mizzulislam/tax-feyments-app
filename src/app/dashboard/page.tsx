@@ -1,6 +1,7 @@
 'use client';
 
 import { useFetchReports } from '@/hooks/useFetchReports';
+import { useFetchIncomeSources } from '@/hooks/useIncomeSources';
 import DashboardStats from '@/components/DashboardStats';
 import ReadinessPanel from '@/components/dashboard/ReadinessPanel';
 import TaxHistoryTable from '@/components/TaxHistoryTable';
@@ -8,16 +9,23 @@ import TaxHistoryTable from '@/components/TaxHistoryTable';
 import TaxCalendar from '@/components/TaxCalendar';
 import TaxTrendChart from '@/components/TaxTrendChart';
 import AdvancedAnalyticsSection from '@/components/AdvancedAnalyticsSection';
+import AIInsightCard from '@/components/dashboard/AIInsightCard';
+import ExportReportButton from '@/components/dashboard/ExportReportButton';
+
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { useDemoStore } from '@/store/useDemoStore';
 
 type TabType = 'overview' | 'analytics' | 'history' | 'calendar';
 
 function DashboardContent() {
   const { data: reports, isLoading, isError, error } = useFetchReports();
+  const { data: incomeSources } = useFetchIncomeSources();
   const searchParams = useSearchParams();
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  
+  const { isDemoMode } = useDemoStore();
 
   useEffect(() => {
     const err = searchParams.get('error');
@@ -28,7 +36,7 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
-  if (isLoading) {
+  if (isLoading && !isDemoMode) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="relative flex justify-center items-center">
@@ -39,7 +47,7 @@ function DashboardContent() {
     );
   }
 
-  if (isError) {
+  if (isError && !isDemoMode) {
     return (
       <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl backdrop-blur-xl">
         <h3 className="font-semibold text-lg mb-2">Gagal Memuat Data</h3>
@@ -49,9 +57,10 @@ function DashboardContent() {
   }
 
   const reportsData = reports || [];
+  const incomeData = incomeSources || [];
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 relative">
       
       {/* BANNER NOTIFIKASI ERROR (ROLE GUARD LIMITATION) */}
       {errorBanner && (
@@ -62,13 +71,15 @@ function DashboardContent() {
       )}
 
       {/* Welcome Title Banner */}
-      <div>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2 md:mb-3">
-          Dasbor Utama
-        </h1>
-        <p className="text-slate-400 max-w-2xl text-sm md:text-md leading-relaxed">
-          Kelola, simulasikan, dan pantau riwayat pelaporan pajak Anda secara terintegrasi menggunakan kalkulator pintar UU HPP.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2 md:mb-3">
+            Dasbor Utama
+          </h1>
+          <p className="text-slate-400 max-w-2xl text-sm md:text-md leading-relaxed">
+            Kelola, simulasikan, dan pantau riwayat pelaporan pajak Anda secara terintegrasi menggunakan kalkulator pintar UU HPP.
+          </p>
+        </div>
       </div>
 
       {/* Tabs Navigation */}
@@ -76,7 +87,7 @@ function DashboardContent() {
         {[
           { id: 'overview', label: 'Ringkasan' },
           { id: 'analytics', label: 'Analitik' },
-          { id: 'history', label: 'Riwayat Laporan' },
+          { id: 'history', label: 'Riwayat Penghasilan' },
           { id: 'calendar', label: 'Kalender Pajak' },
         ].map((tab) => (
           <button
@@ -101,7 +112,7 @@ function DashboardContent() {
             <DashboardStats data={reportsData} />
             <TaxTrendChart data={reportsData} />
             <TaxHistoryTable 
-              data={reportsData.slice(0, 3)} 
+              data={incomeData.slice(0, 3)} 
               variant="compact" 
               onViewAll={() => setActiveTab('history')} 
             />
@@ -116,7 +127,7 @@ function DashboardContent() {
 
         {activeTab === 'history' && (
           <div>
-            <TaxHistoryTable data={reportsData} />
+            <TaxHistoryTable data={incomeData} />
           </div>
         )}
 
@@ -142,3 +153,4 @@ export default function DashboardPage() {
     </Suspense>
   );
 }
+

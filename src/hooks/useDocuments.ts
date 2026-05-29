@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TaxDocument } from '@/types/taxpayer';
 import { v4 as uuidv4 } from 'uuid';
+import { useDemoStore } from '@/store/useDemoStore';
 
 type DocumentRow = {
   id: string;
@@ -21,6 +22,14 @@ export function useFetchDocuments(category?: string, taxYear?: number) {
   return useQuery<TaxDocument[]>({
     queryKey: ['documents_list', category, taxYear],
     queryFn: async () => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        let docs = demoState.demoDocuments;
+        if (category) docs = docs.filter(d => d.category === category);
+        if (taxYear) docs = docs.filter(d => d.taxYear === taxYear);
+        return docs;
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
@@ -74,6 +83,27 @@ export function useUploadDocument() {
       taxYear?: number;
       description?: string;
     }) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate upload
+        
+        const fileExt = file.name.split('.').pop();
+        const uniqueFileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `demo/${category}/${uniqueFileName}`;
+        
+        const doc: Partial<TaxDocument> = {
+          fileName: file.name,
+          filePath: filePath,
+          fileSize: file.size,
+          fileType: file.type,
+          category: category as any,
+          taxYear: taxYear || null,
+          description: description || null,
+        };
+        demoState.addDemoDocument(doc);
+        return { id: 'demo-doc', ...doc };
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Sesi aktif tidak ditemukan.');
 
@@ -146,6 +176,13 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: async (doc: TaxDocument) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        demoState.deleteDemoDocument(doc.id);
+        return doc.id;
+      }
+
       // 1. Delete from Storage
       const { error: storageError } = await supabase.storage
         .from('tax-documents')
@@ -173,6 +210,11 @@ export function useDeleteDocument() {
 
 // Get Signed URL for private bucket
 export async function getDocumentUrl(filePath: string): Promise<string> {
+  const demoState = useDemoStore.getState();
+  if (demoState.isDemoMode && filePath.startsWith('demo/')) {
+    return '#'; // return dummy link in demo mode
+  }
+
   const { data, error } = await supabase.storage
     .from('tax-documents')
     .createSignedUrl(filePath, 60 * 60); // 1 hour valid

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { AssetInput, Asset } from '@/types/taxpayer';
+import { useDemoStore } from '@/store/useDemoStore';
 
 type AssetRow = {
   id: string;
@@ -20,6 +21,11 @@ export function useFetchAssets(taxYear?: number) {
   return useQuery<Asset[]>({
     queryKey: taxYear ? ['assets_list', taxYear] : ['assets_list'],
     queryFn: async () => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        return taxYear ? demoState.demoAssets.filter(a => a.taxYear === taxYear) : demoState.demoAssets;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
@@ -64,6 +70,13 @@ export function useMutateAsset() {
 
   return useMutation({
     mutationFn: async ({ id, ...input }: { id?: string } & AssetInput) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        demoState.addDemoAsset(input);
+        return { id: 'demo-asset', ...input };
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');
 
@@ -113,6 +126,13 @@ export function useDeleteAsset() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        demoState.deleteDemoAsset(id);
+        return id;
+      }
+
       const { error } = await supabase
         .from('assets')
         .delete()

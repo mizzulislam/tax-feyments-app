@@ -6,7 +6,7 @@ export default function AIResponseWrapper({ children, isHighRisk }: { children: 
       {/* Watermark Edukasi */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl flex items-center justify-center opacity-[0.03] select-none z-0">
         <div className="transform -rotate-12 whitespace-nowrap text-2xl font-black text-white">
-          AI GENERATED • TAX FEYMENTS
+          AI GENERATED • MY TAX
         </div>
       </div>
       

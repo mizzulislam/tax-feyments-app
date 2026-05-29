@@ -522,7 +522,7 @@ export const TAX_LEARNING_MODULES: TaxLearningModule[] = [
   },
   {
     slug: 'coretax-espt',
-    title: 'e-SPT/Aplikasi Pelaporan Pajak (Coretax)',
+    title: 'Sistem Inti Administrasi Perpajakan (Coretax)',
     shortTitle: 'Coretax',
     description: 'Alur digital pajak: akun DJP, sertifikat elektronik, e-filing, e-billing, bukti potong, faktur, validasi, dan arsip elektronik.',
     difficulty: 'menengah',

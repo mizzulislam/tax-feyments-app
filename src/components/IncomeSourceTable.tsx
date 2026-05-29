@@ -9,6 +9,12 @@ interface IncomeSourceTableProps {
   onEdit: (source: IncomeSource) => void;
 }
 
+const MONTH_NAMES: Record<string, string> = {
+  '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+  '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+  '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+};
+
 const TYPE_LABELS: Record<string, { label: string; badge: string }> = {
   pekerjaan_tetap: {
     label: 'Pekerjaan Tetap',
@@ -42,7 +48,7 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
   const { showAlert, showConfirm } = useAlert();
 
   const handleDelete = async (id: string, name: string) => {
-    if (await showConfirm('Hapus Sumber', `Apakah Anda yakin ingin menghapus sumber penghasilan "${name}"?`, 'Ya, Hapus', 'Batal')) {
+    if (await showConfirm('Hapus Sumber', `Apakah Anda yakin ingin menghapus sumber penghasilan "${name}"?`, 'Ya, Hapus', 'Batal', 'error')) {
       try {
         await deleteMutation.mutateAsync(id);
       } catch (err: unknown) {
@@ -73,6 +79,7 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider divide-x divide-slate-800/30">
               <th className="py-4 px-6 text-center">Sumber Penghasilan</th>
+              <th className="py-4 px-6 text-center">Pemotong Pajak</th>
               <th className="py-4 px-6 text-center">Kategori</th>
               <th className="py-4 px-6 text-center">Penghasilan Setahun</th>
               <th className="py-4 px-6 text-center">Kredit Pajak (Dipotong)</th>
@@ -82,20 +89,20 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
           <tbody className="divide-y divide-slate-800/80 text-xs font-medium">
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                <td colSpan={6} className="py-12 text-center text-slate-500 font-medium">
                   <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
                   Memuat rincian penghasilan...
                 </td>
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-red-400 font-medium">
+                <td colSpan={6} className="py-12 text-center text-red-400 font-medium">
                   Gagal memuat data: {error?.message}
                 </td>
               </tr>
             ) : sources.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
+                <td colSpan={6} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
                   Belum ada sumber penghasilan tercatat untuk tahun pajak {taxYear}.
                 </td>
               </tr>
@@ -104,22 +111,46 @@ export default function IncomeSourceTable({ taxYear, onEdit }: IncomeSourceTable
                 <tr key={s.id} className="hover:bg-slate-900/20 transition-all duration-150 divide-x divide-slate-800/30">
                   <td className="py-4.5 px-6">
                     <span className="font-bold text-white block mb-0.5">{s.sourceName}</span>
+                    {s.metadata?.jenisPemotongan === 'bulanan' && s.metadata?.taxPeriod && (
+                      <span className="text-[10px] text-blue-400 font-bold block mb-0.5">
+                        Masa Pajak: {MONTH_NAMES[s.metadata.taxPeriod as string] || s.metadata.taxPeriod}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-4.5 px-6">
+                    {s.namaPemotong ? (
+                      <span className="text-[11px] font-bold text-white block mb-0.5">
+                        {s.namaPemotong}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 italic block mb-0.5">Tanpa Nama Pemotong</span>
+                    )}
                     {s.npwpPemotong ? (
-                      <span className="text-[10px] text-slate-500 font-mono font-bold block">
-                        NPWP Pemotong: {s.npwpPemotong}
+                      <span className="text-[10px] text-slate-400 font-mono block">
+                        NPWP: {s.npwpPemotong}
                       </span>
                     ) : (
                       <span className="text-[10px] text-slate-600 block">NPWP tidak tersedia</span>
                     )}
                   </td>
                   <td className="py-4.5 px-6 whitespace-nowrap">
-                    <span
-                      className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                        TYPE_LABELS[s.sourceType]?.badge || 'bg-slate-500/10 border-slate-500/30 text-slate-300'
-                      }`}
-                    >
-                      {TYPE_LABELS[s.sourceType]?.label || s.sourceType}
-                    </span>
+                    <div className="flex flex-col items-start gap-1">
+                      <span
+                        className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                          TYPE_LABELS[s.sourceType]?.badge || 'bg-slate-500/10 border-slate-500/30 text-slate-300'
+                        }`}
+                      >
+                        {TYPE_LABELS[s.sourceType]?.label || s.sourceType}
+                      </span>
+                      {s.metadata && (
+                        <span className="text-[9px] text-slate-500 font-medium">
+                          {s.sourceType === 'pekerjaan_bebas' && s.metadata.tidakFinalCategory}
+                          {s.sourceType === 'sewa' && (s.metadata.sewaKategori === 'pphFinal' ? 'PPh Final 10%' : 'PPh 23 (2%)')}
+                          {s.sourceType === 'investasi' && String(s.metadata.investasiKategori).replace('investasi_', '')}
+                          {s.sourceType === 'lainnya' && String(s.metadata.lainnyaKategori).replace('pph22_', '').replace('pph23_', '')}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4.5 px-6 font-bold text-white font-mono whitespace-nowrap">
                     Rp {s.annualIncome.toLocaleString('id-ID')}

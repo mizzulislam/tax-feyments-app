@@ -35,9 +35,9 @@ export default function Tooltip({ content, align = 'center' }: TooltipProps) {
       </button>
 
       {visible && (
-        <span className={`absolute bottom-full mb-2 w-64 p-3.5 bg-slate-900/95 backdrop-blur-xl border border-slate-800 text-[11px] text-slate-300 rounded-2xl shadow-2xl z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200 leading-relaxed font-medium ${alignmentClasses}`}>
+        <span className={`absolute bottom-full mb-2 w-64 p-3.5 bg-white backdrop-blur-xl border border-blue-100 text-[11.5px] text-blue-950 rounded-2xl shadow-xl shadow-blue-900/10 z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200 leading-relaxed font-bold ${alignmentClasses}`}>
           <span className="relative z-10 block text-left">{content}</span>
-          <span className={`absolute top-full border-[5px] border-transparent border-t-slate-900 ${arrowClasses}`}></span>
+          <span className={`absolute top-full border-[6px] border-transparent border-t-white ${arrowClasses}`}></span>
         </span>
       )}
     </span>

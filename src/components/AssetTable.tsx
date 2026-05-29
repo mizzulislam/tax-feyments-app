@@ -2,6 +2,7 @@
 
 import { useFetchAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { Asset } from '@/types/taxpayer';
+import { getAssetFiscalGroup } from '@/lib/taxEngine';
 import { useAlert } from '@/contexts/AlertContext';
 
 interface AssetTableProps {
@@ -64,7 +65,8 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
   const totalCurrent = assets.reduce((acc, curr) => acc + (curr.currentValue || curr.acquisitionValue), 0);
 
   return (
-    <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-4">
+    <div className="space-y-6">
+      <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-4">
       <div className="p-5 border-b border-slate-800 bg-slate-950/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">
@@ -82,6 +84,7 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
             <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider divide-x divide-slate-800/30">
               <th className="py-4 px-6 text-center">Nama Harta / Aset</th>
               <th className="py-4 px-6 text-center">Kategori</th>
+              <th className="py-4 px-6 text-center">Kelompok Harta</th>
               <th className="py-4 px-6 font-mono text-center">Tahun Perolehan</th>
               <th className="py-4 px-6 text-center">Nilai Perolehan</th>
               <th className="py-4 px-6 text-center">Nilai Pasar Saat Ini</th>
@@ -104,7 +107,7 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
               </tr>
             ) : assets.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
+                <td colSpan={7} className="py-12 text-center text-slate-500 font-medium leading-relaxed">
                   Belum ada harta/aset yang tercatat untuk tahun pajak {taxYear}.
                 </td>
               </tr>
@@ -128,7 +131,12 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
                       {TYPE_LABELS[a.assetType]?.label || a.assetType}
                     </span>
                   </td>
-                  <td className="py-4.5 px-6 font-mono text-slate-300 font-bold whitespace-nowrap">
+                  <td className="py-4.5 px-6 whitespace-nowrap text-center">
+                    <span className="text-xs font-semibold text-slate-300">
+                      {getAssetFiscalGroup(a.assetType, a.assetName)}
+                    </span>
+                  </td>
+                  <td className="py-4.5 px-6 font-mono text-slate-300 font-bold whitespace-nowrap text-center">
                     {a.acquisitionYear}
                   </td>
                   <td className="py-4.5 px-6 font-bold text-white font-mono whitespace-nowrap">
@@ -205,6 +213,9 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
                   >
                     {TYPE_LABELS[a.assetType]?.label || a.assetType}
                   </span>
+                  <span className="mt-1.5 ml-1.5 inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border bg-blue-500/10 border-blue-500/30 text-blue-400">
+                    {getAssetFiscalGroup(a.assetType, a.assetName)}
+                  </span>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   <button
@@ -254,6 +265,79 @@ export default function AssetTable({ taxYear, onEdit }: AssetTableProps) {
             <span className="text-md font-black text-blue-400 font-mono">
               Rp {totalCurrent.toLocaleString('id-ID')}
             </span>
+          </div>
+        </div>
+      )}
+      </div>
+
+      {/* Educational Summary Card */}
+      {assets.length > 0 && (
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-indigo-500/20 to-blue-400/20 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition duration-500"></div>
+          <div className="relative bg-slate-900/80 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white tracking-tight">
+                    Edukasi: <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Analisis Penyusutan Fiskal</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Penjelasan penyusutan aset Anda berdasarkan UU Pajak</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
+                {Object.entries(
+                  assets.reduce((acc, asset) => {
+                    const groupName = getAssetFiscalGroup(asset.assetType, asset.assetName);
+                    if (!acc[groupName]) acc[groupName] = [];
+                    acc[groupName].push(asset);
+                    return acc;
+                  }, {} as Record<string, Asset[]>)
+                ).map(([group, groupAssets]) => (
+                  <div key={group} className="relative bg-slate-950/60 rounded-2xl p-5 border border-slate-800/60 shadow-lg hover:border-blue-500/30 transition-colors duration-300 group/card flex flex-col">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 blur-[30px] rounded-full pointer-events-none group-hover/card:bg-blue-500/10 transition-colors"></div>
+                    <h5 className="font-bold text-white text-sm mb-2 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                      {group}
+                    </h5>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-5 flex-grow">
+                      {group === 'Kelompok 1 (4 Tahun)' && 'Aset dalam kelompok ini (seperti motor, alat elektronik) memiliki masa manfaat fiskal 4 tahun. Nilainya disusutkan sebesar 25% setiap tahunnya menggunakan metode garis lurus.'}
+                      {group === 'Kelompok 2 (8 Tahun)' && 'Aset dalam kelompok ini (seperti mobil penumpang, furnitur besar) memiliki masa manfaat fiskal 8 tahun. Nilainya disusutkan sebesar 12.5% setiap tahunnya.'}
+                      {group === 'Bangunan (20 Tahun)' && 'Bangunan permanen memiliki masa manfaat fiskal 20 tahun dan disusutkan sebesar 5% setiap tahunnya.'}
+                      {group === 'Tidak Disusutkan' && 'Aset seperti tanah murni, kas, deposito, saham, dan perhiasan tidak mengalami penyusutan secara fiskal. Nilai bukunya akan selalu sama dengan nilai perolehan.'}
+                    </p>
+                    <div className="space-y-3">
+                      {groupAssets.map(a => {
+                        const yearsElapsed = taxYear - a.acquisitionYear;
+                        const isDepreciated = group !== 'Tidak Disusutkan';
+                        const isFullyDepreciated = (a.currentValue || 0) === 0 && yearsElapsed > 0;
+                        
+                        return (
+                          <div key={a.id} className="relative overflow-hidden text-[11px] bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/50 flex flex-col gap-1.5 shadow-inner">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 opacity-50"></div>
+                            <span className="font-bold text-slate-200 block truncate pl-2">
+                              {a.assetName}
+                              <span className="text-slate-500 font-normal ml-1">(Beli: {a.acquisitionYear}, Rp {a.acquisitionValue.toLocaleString('id-ID')})</span>
+                            </span>
+                            <span className="text-slate-400 pl-2 block font-medium">
+                              {isDepreciated ? (
+                                isFullyDepreciated 
+                                  ? `Usia aset ${yearsElapsed} tahun (melebihi masa manfaat). Nilai sisa bukunya secara fiskal saat ini sudah Rp 0.`
+                                  : `Usia aset ${yearsElapsed} tahun. Nilai pasar/buku saat ini tersisa Rp ${(a.currentValue || a.acquisitionValue).toLocaleString('id-ID')}.`
+                              ) : (
+                                `Tidak disusutkan. Nilainya tetap Rp ${a.acquisitionValue.toLocaleString('id-ID')}.`
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

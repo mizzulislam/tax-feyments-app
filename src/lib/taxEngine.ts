@@ -424,6 +424,7 @@ export function calculateAnnualPph21({
 
 export interface ConsolidatedTaxResult {
   totalGrossProgressive: number;
+  pekerjaanTetapGross: number;
   biayaJabatan: number;
   netProgressive: number;
   ptkpValue: number;
@@ -529,6 +530,7 @@ export function calculateConsolidatedTax(
 
   return {
     totalGrossProgressive,
+    pekerjaanTetapGross,
     biayaJabatan,
     netProgressive,
     ptkpValue,
@@ -1041,4 +1043,49 @@ export function compareScenarios(baseTax: number, simTax: number): { diff: numbe
   }
   
   return { diff, pct };
+}
+
+export function calculateFiscalDepreciation(acquisitionValue: number, acquisitionYear: number, currentYear: number, assetType: string, assetName: string): number {
+  if (acquisitionValue <= 0 || currentYear < acquisitionYear) return acquisitionValue;
+  const yearsElapsed = currentYear - acquisitionYear;
+  if (yearsElapsed === 0) return acquisitionValue;
+  let usefulLife = 0;
+  const nameLower = (assetName || '').toLowerCase();
+  switch (assetType) {
+    case 'kendaraan':
+      if (nameLower.includes('motor') || nameLower.includes('sepeda')) { usefulLife = 4; } else { usefulLife = 8; }
+      break;
+    case 'peralatan':
+      usefulLife = 4;
+      break;
+    case 'tanah_bangunan':
+      if (nameLower.includes('tanah') && !nameLower.includes('bangunan') && !nameLower.includes('rumah')) {
+        usefulLife = 0;
+      } else {
+        usefulLife = 20;
+      }
+      break;
+    default:
+      usefulLife = 0;
+      break;
+  }
+  if (usefulLife === 0) return acquisitionValue;
+  const depreciationRate = 1 / usefulLife;
+  const totalDepreciation = acquisitionValue * depreciationRate * yearsElapsed;
+  const bookValue = acquisitionValue - totalDepreciation;
+  return Math.max(0, bookValue);
+}
+
+export function getAssetFiscalGroup(assetType: string, assetName: string): string {
+  const nameLower = (assetName || '').toLowerCase();
+  switch (assetType) {
+    case 'kendaraan':
+      return (nameLower.includes('motor') || nameLower.includes('sepeda')) ? 'Kelompok 1 (4 Tahun)' : 'Kelompok 2 (8 Tahun)';
+    case 'peralatan':
+      return 'Kelompok 1 (4 Tahun)';
+    case 'tanah_bangunan':
+      return (nameLower.includes('tanah') && !nameLower.includes('bangunan') && !nameLower.includes('rumah')) ? 'Tidak Disusutkan' : 'Bangunan (20 Tahun)';
+    default:
+      return 'Tidak Disusutkan';
+  }
 }

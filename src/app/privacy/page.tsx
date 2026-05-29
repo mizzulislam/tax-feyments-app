@@ -3,7 +3,7 @@ export default function PrivacyPage() {
     <main className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 md:px-10">
       <section className="mx-auto max-w-3xl space-y-8">
         <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-300">Tax Feyments</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-300">My Tax</p>
           <h1 className="text-4xl font-black tracking-tight text-white">Kebijakan Privasi</h1>
           <p className="text-sm leading-6 text-slate-400">
             Halaman ini menjelaskan cara aplikasi mengelola data pajak, profil, dokumen, dan riwayat penggunaan untuk membantu persiapan administrasi pajak pribadi dan UMKM.
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-white">Tujuan Penggunaan</h2>
             <p className="text-sm leading-6 text-slate-400">
-              Data digunakan untuk kalkulasi, checklist kesiapan, simulasi, penyusunan ringkasan, riwayat, dan personalisasi edukasi pajak. Tax Feyments tidak menerbitkan kode billing resmi, tidak menerima pembayaran pajak, dan tidak menggantikan kanal DJP.
+              Data digunakan untuk kalkulasi, checklist kesiapan, simulasi, penyusunan ringkasan, riwayat, dan personalisasi edukasi pajak. My Tax tidak menerbitkan kode billing resmi, tidak menerima pembayaran pajak, dan tidak menggantikan kanal DJP.
             </p>
           </section>
 

@@ -14,69 +14,12 @@ export default function BillingPage() {
         </p>
       </div>
 
-      <div className="bg-slate-900/60 border border-blue-500/30 rounded-3xl p-6 md:p-8 space-y-6">
-        <div className="border-l-4 border-blue-500 pl-4 mb-6">
-          <h2 className="text-xl font-bold text-white mb-2">Penafian Penting</h2>
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Aplikasi ini hanya menyediakan <strong>draft persiapan pembayaran</strong> dan tidak terhubung dengan sistem e-Billing DJP. 
-            Tax Feyments tidak menerbitkan kode billing, tidak menerima pembayaran, dan tidak menandai pajak sebagai lunas. Pembayaran pajak yang sah hanya dapat dilakukan menggunakan 
-            kode billing yang diterbitkan secara resmi oleh DJP.
-          </p>
-        </div>
-
-        <div className="space-y-8">
-          <div className="relative pl-10">
-            <div className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">1</div>
-            <h3 className="text-lg font-bold text-white mb-2">Login ke DJP Online</h3>
-            <p className="text-slate-400 text-sm">
-              Kunjungi situs resmi DJP Online di <a href="https://djponline.pajak.go.id" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">djponline.pajak.go.id</a>. Masukkan NIK/NPWP, kata sandi, dan kode keamanan.
-            </p>
-          </div>
-
-          <div className="relative pl-10">
-            <div className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">2</div>
-            <h3 className="text-lg font-bold text-white mb-2">Pilih Menu e-Billing</h3>
-            <p className="text-slate-400 text-sm mb-3">
-              Setelah berhasil masuk, navigasikan ke menu <strong>Bayar</strong> lalu pilih <strong>e-Billing</strong>.
-            </p>
-          </div>
-
-          <div className="relative pl-10">
-            <div className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">3</div>
-            <h3 className="text-lg font-bold text-white mb-2">Isi Form Surat Setoran Elektronik (SSE)</h3>
-            <p className="text-slate-400 text-sm mb-4">
-              Pilih Jenis Pajak dan Jenis Setoran yang sesuai dengan pajak yang ingin Anda bayarkan. Berikut panduan ringkas untuk SPT Tahunan Orang Pribadi:
-            </p>
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid gap-3">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <span className="text-slate-400 text-xs uppercase font-bold">Jenis Pajak</span>
-                <span className="text-white font-mono text-sm">411125 - PPh Pasal 25/29 Orang Pribadi</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <span className="text-slate-400 text-xs uppercase font-bold">Jenis Setoran</span>
-                <span className="text-white font-mono text-sm">200 - Tahunan</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-xs uppercase font-bold">Masa Pajak & Tahun</span>
-                <span className="text-white text-sm">Des - Des | Tahun bersangkutan</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative pl-10">
-            <div className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">4</div>
-            <h3 className="text-lg font-bold text-white mb-2">Buat Kode Billing Resmi di DJP & Lakukan Pembayaran</h3>
-            <p className="text-slate-400 text-sm">
-              Klik <strong>Buat Kode Billing</strong>. Anda akan menerima 15 digit angka. Gunakan kode ini untuk membayar melalui ATM, Internet Banking, Mobile Banking, Kantor Pos, atau e-Commerce yang mendukung pembayaran MPN G3.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-xs text-slate-500 italic text-center">
-            Pajak yang Anda bayarkan adalah wujud cinta tanah air dan partisipasi langsung dalam pembangunan bangsa.
-          </p>
-        </div>
+      <div className="bg-slate-900/60 border border-blue-500/30 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
+        <svg className="w-16 h-16 text-slate-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <h2 className="text-2xl font-bold text-slate-300">Modul Draft Pembayaran sedang dikembangkan</h2>
+        <p className="text-slate-500 max-w-lg">
+          Fitur ini akan segera hadir. Untuk sementara, panduan e-Billing telah dipindahkan ke menu Edukasi Perpajakan di Modul Coretax.
+        </p>
       </div>
     </div>
   );

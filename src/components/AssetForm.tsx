@@ -7,6 +7,7 @@ import { useMutateAsset } from '@/hooks/useAssets';
 import { useEffect } from 'react';
 import Tooltip from './Tooltip';
 import { ModernSelect } from '@/components/ui/ModernSelect';
+import { calculateFiscalDepreciation } from '@/lib/taxEngine';
 
 const formatNumberInput = (value: number) => value > 0 ? Math.round(value).toLocaleString('id-ID') : '';
 const parseFormattedNumber = (value: string) => {
@@ -49,6 +50,10 @@ export default function AssetForm({
   });
 
   const acquisitionValue = useWatch({ control, name: 'acquisitionValue' }) || 0;
+  const acquisitionYear = useWatch({ control, name: 'acquisitionYear' }) || activeTaxYear;
+  const taxYear = useWatch({ control, name: 'taxYear' }) || activeTaxYear;
+  const assetType = useWatch({ control, name: 'assetType' }) || 'lainnya';
+  const assetName = useWatch({ control, name: 'assetName' }) || '';
 
   // Sync edit state or activeTaxYear change
   useEffect(() => {
@@ -75,12 +80,22 @@ export default function AssetForm({
     }
   }, [editAsset, activeTaxYear, reset]);
 
-  // Proactively suggest current value = acquisition value as a smart starting default
+
+  // Proactively suggest current value based on fiscal depreciation rules
   useEffect(() => {
     if (acquisitionValue > 0) {
-      setValue('currentValue', acquisitionValue);
+      const depreciatedValue = calculateFiscalDepreciation(
+        acquisitionValue,
+        acquisitionYear,
+        taxYear,
+        assetType,
+        assetName
+      );
+      setValue('currentValue', depreciatedValue);
+    } else {
+      setValue('currentValue', 0);
     }
-  }, [acquisitionValue, setValue]);
+  }, [acquisitionValue, acquisitionYear, taxYear, assetType, assetName, setValue]);
 
   const onSubmit = (data: AssetInput) => {
     mutate(

@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TaxReportInput, taxReportSchema } from '@/types/taxpayer';
 import type { PtkpStatus } from '@/lib/taxEngine';
+import { useDemoStore } from '@/store/useDemoStore';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface MutateReportData extends TaxReportInput {
   status?: 'draft' | 'submitted';
@@ -14,6 +16,35 @@ export function useMutateReport() {
 
   return useMutation({
     mutationFn: async (reportData: MutateReportData) => {
+      const demoState = useDemoStore.getState();
+      if (demoState.isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API delay
+        
+        const parsed = taxReportSchema.safeParse({
+          taxYear: reportData.taxYear,
+          taxPeriod: reportData.taxPeriod,
+          grossIncome: reportData.grossIncome,
+        });
+
+        if (!parsed.success) {
+          throw new Error(parsed.error.issues[0]?.message || 'Data laporan pajak tidak valid.');
+        }
+
+        // Extremely simplified demo calculation for visualization
+        const tax_payable = Math.max(0, (parsed.data.grossIncome - 54000000) * 0.05);
+
+        const newReport = {
+          tax_year: parsed.data.taxYear,
+          tax_period: parsed.data.taxPeriod,
+          gross_income: parsed.data.grossIncome,
+          tax_payable: tax_payable,
+          status: reportData.status || 'draft'
+        };
+
+        demoState.addOrUpdateDemoReport(newReport as any);
+        return newReport;
+      }
+
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error('Sesi aktif tidak ditemukan. Silakan login kembali.');

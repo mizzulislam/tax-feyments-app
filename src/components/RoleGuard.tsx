@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useTaxpayerStore } from '@/store/useTaxpayerStore';
+import { decrypt } from '@/lib/encryption';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -33,18 +34,28 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
           .maybeSingle();
 
         if (error || !profile) {
-          router.replace('/profile');
+          router.replace('/login');
           return;
         }
 
         const userRole = (profile.role as 'user' | 'consultant' | 'admin') || 'user';
 
+        let nikDecrypted = profile.nik || '';
+        if (profile.nik_encrypted) {
+          nikDecrypted = decrypt(profile.nik_encrypted) || nikDecrypted;
+        }
+
+        let npwpDecrypted = profile.npwp || '';
+        if (profile.npwp_encrypted) {
+          npwpDecrypted = decrypt(profile.npwp_encrypted) || npwpDecrypted;
+        }
+
         // Update Zustand store secara real-time agar sinkron
         setProfile({
           fullName: profile.full_name,
           taxpayerType: profile.taxpayer_type as 'pribadi' | 'badan',
-          nik: profile.nik,
-          npwp: profile.npwp,
+          nik: nikDecrypted,
+          npwp: npwpDecrypted,
           phoneNumber: profile.phone_number,
           occupation: profile.occupation,
           education: profile.education,

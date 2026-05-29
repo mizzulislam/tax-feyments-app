@@ -19,7 +19,7 @@ export function buildDraftPaymentPayload(input: {
   reportId?: string | null;
 }) {
   return JSON.stringify({
-    issuer: 'Tax Feyments',
+    issuer: 'My Tax',
     type: 'PAYMENT_PREPARATION_DRAFT',
     draftReference: input.draftReference,
     amount: input.amount,

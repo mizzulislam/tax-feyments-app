@@ -76,7 +76,7 @@ export default function TourGuide() {
   useEffect(() => {
     setIsMounted(true);
     // Cek apakah user sudah pernah menyelesaikan tour (menggunakan localStorage)
-    const hasSeenTour = localStorage.getItem('taxFeyments_tour_completed');
+    const hasSeenTour = localStorage.getItem('myTax_tour_completed');
     
     // Memberikan sedikit delay sebelum tour berjalan agar UI sudah render sempurna
     if (!hasSeenTour) {
@@ -97,7 +97,7 @@ export default function TourGuide() {
 
     if (status === 'finished' || status === 'skipped') {
       setRun(false);
-      localStorage.setItem('taxFeyments_tour_completed', 'true');
+      localStorage.setItem('myTax_tour_completed', 'true');
     }
   };
 

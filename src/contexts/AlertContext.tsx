@@ -19,7 +19,7 @@ interface AlertState {
 
 interface AlertContextType {
   showAlert: (title: string, message: string, type?: AlertType) => Promise<void>;
-  showConfirm: (title: string, message: string, confirmText?: string, cancelText?: string) => Promise<boolean>;
+  showConfirm: (title: string, message: string, confirmText?: string, cancelText?: string, type?: AlertType) => Promise<boolean>;
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
@@ -73,13 +73,13 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const showConfirm = useCallback((title: string, message: string, confirmText: string = 'Ya', cancelText: string = 'Batal') => {
+  const showConfirm = useCallback((title: string, message: string, confirmText: string = 'Ya', cancelText: string = 'Batal', type: AlertType = 'warning') => {
     return new Promise<boolean>((resolve) => {
       setAlertState({
         isOpen: true,
         title,
         message,
-        type: 'warning',
+        type,
         isConfirm: true,
         confirmText,
         cancelText,
@@ -128,8 +128,18 @@ export function AlertProvider({ children }: { children: ReactNode }) {
           }}
         >
           <div className="relative w-full max-w-sm overflow-visible rounded-3xl p-[1px] shadow-2xl shadow-black/50 animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
-            <div className="pointer-events-none absolute -inset-[2px] rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.58),rgba(14,165,233,0.18)_40%,rgba(99,102,241,0.28)_68%,rgba(15,23,42,0.1))] opacity-80 blur-md"></div>
-            <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[linear-gradient(135deg,rgba(59,130,246,0.74),rgba(30,64,175,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]"></div>
+            <div className={`pointer-events-none absolute -inset-[2px] rounded-3xl opacity-80 blur-md ${
+              alertState.type === 'error' ? 'bg-[linear-gradient(135deg,rgba(244,63,94,0.58),rgba(225,29,72,0.18)_40%,rgba(159,18,57,0.28)_68%,rgba(15,23,42,0.1))]' :
+              alertState.type === 'success' ? 'bg-[linear-gradient(135deg,rgba(16,185,129,0.58),rgba(5,150,105,0.18)_40%,rgba(6,78,59,0.28)_68%,rgba(15,23,42,0.1))]' :
+              alertState.type === 'warning' ? 'bg-[linear-gradient(135deg,rgba(245,158,11,0.58),rgba(217,119,6,0.18)_40%,rgba(146,64,14,0.28)_68%,rgba(15,23,42,0.1))]' :
+              'bg-[linear-gradient(135deg,rgba(59,130,246,0.58),rgba(14,165,233,0.18)_40%,rgba(99,102,241,0.28)_68%,rgba(15,23,42,0.1))]'
+            }`}></div>
+            <div className={`pointer-events-none absolute inset-0 rounded-3xl ${
+              alertState.type === 'error' ? 'bg-[linear-gradient(135deg,rgba(244,63,94,0.74),rgba(159,18,57,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]' :
+              alertState.type === 'success' ? 'bg-[linear-gradient(135deg,rgba(16,185,129,0.74),rgba(6,78,59,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]' :
+              alertState.type === 'warning' ? 'bg-[linear-gradient(135deg,rgba(245,158,11,0.74),rgba(146,64,14,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]' :
+              'bg-[linear-gradient(135deg,rgba(59,130,246,0.74),rgba(30,64,175,0.2)_45%,rgba(148,163,184,0.1)_75%,rgba(15,23,42,0.38))]'
+            }`}></div>
             <div className="relative rounded-[23px] bg-slate-950/95 p-5 shadow-[inset_0_1px_0_rgba(148,163,184,0.1)] backdrop-blur-2xl">
               <div className="flex items-start gap-4">
                 <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
